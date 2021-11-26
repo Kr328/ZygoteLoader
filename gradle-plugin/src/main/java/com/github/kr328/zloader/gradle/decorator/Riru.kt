@@ -58,7 +58,7 @@ object Riru {
                 it.into("riru")
                 it.include("**/*.so")
                 it.rename { name ->
-                    if (name == "libloader.so") "lib${properties["id"]}" else name
+                    if (name == "libloader.so") "lib${properties["id"]}.so" else name
                 }
             }
             from(packaging.dexFolders) {
