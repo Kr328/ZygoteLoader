@@ -57,6 +57,9 @@ object Riru {
             from(packaging.jniFolders.map { it.resolve("lib") }) {
                 it.into("riru")
                 it.include("**/*.so")
+                it.rename { name ->
+                    if (name == "libloader.so") "lib${properties["id"]}" else name
+                }
             }
             from(packaging.dexFolders) {
                 it.include("classes.dex")
