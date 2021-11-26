@@ -23,9 +23,11 @@ class ZygoteLoaderPlugin : Plugin<Project> {
             app.productFlavors { flavors ->
                 flavors.create(Riru.NAME) {
                     it.dimension = LOADER_FLAVOR_DIMENSION
+                    it.multiDexEnabled = false
                 }
                 flavors.create("zygisk") {
                     it.dimension = LOADER_FLAVOR_DIMENSION
+                    it.multiDexEnabled = false
                 }
             }
             app.variantFilter {
