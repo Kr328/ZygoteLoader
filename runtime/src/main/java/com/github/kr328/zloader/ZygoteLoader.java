@@ -9,6 +9,8 @@ import java.nio.file.Paths;
 import java.nio.file.attribute.PosixFilePermissions;
 
 public final class ZygoteLoader {
+    public static final String PACKAGE_SYSTEM_SERVER = ".android";
+
     public static void setPackageEnabled(String packageName, boolean enabled) throws IOException {
         if (packageName.isEmpty())
             return;
