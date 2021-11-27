@@ -12,9 +12,6 @@ buildscript {
 }
 
 allprojects {
-    group = "com.github.kr328.zloader"
-    version = "1.0"
-
     repositories {
         google()
         mavenCentral()
@@ -26,7 +23,7 @@ subprojects {
 
     afterEvaluate {
         group = "com.github.kr328.zloader"
-        version = "1.3"
+        version = "1.4"
 
         val isAndroid = plugins.hasPlugin("com.android.base")
 

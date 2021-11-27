@@ -16,6 +16,7 @@
 
 #define PACKAGE_SERVER_SERVER ".android"
 
+static Riru *riru;
 static void *classes;
 static int classesLength;
 static std::string packageName;
@@ -46,8 +47,8 @@ static void nativeForkSystemServerPre(
 }
 
 static void nativeForkSystemServerPost(JNIEnv *env, jclass cls, jint res) {
-    if (!packageName.empty()) {
-        if (res == 0) {
+    if (res == 0) {
+        if (!packageName.empty()) {
             Log::i("Load on " + packageName);
 
             Dex::loadAndInvokeLoader(
@@ -58,8 +59,10 @@ static void nativeForkSystemServerPost(JNIEnv *env, jclass cls, jint res) {
             );
         }
 
-        packageName.clear();
+        *riru->allowUnload = 1;
     }
+
+    packageName.clear();
 }
 
 static void nativeForkAndSpecializePre(
@@ -82,8 +85,8 @@ static void nativeForkAndSpecializePre(
 }
 
 static void nativeForkAndSpecializePost(JNIEnv *env, jclass cls, jint res) {
-    if (!packageName.empty()) {
-        if (res == 0) {
+    if (res == 0) {
+        if (!packageName.empty()) {
             Log::i("Load on " + packageName);
 
             Dex::loadAndInvokeLoader(
@@ -94,8 +97,10 @@ static void nativeForkAndSpecializePost(JNIEnv *env, jclass cls, jint res) {
             );
         }
 
-        packageName.clear();
+        *riru->allowUnload = 1;
     }
+
+    packageName.clear();
 }
 
 static void nativeSpecializeAppProcessPre(
@@ -125,22 +130,26 @@ static void nativeSpecializeAppProcessPost(JNIEnv *env, jclass clazz) {
                 packageName,
                 Prop::getText()
         );
-
-        packageName.clear();
     }
+
+    *riru->allowUnload = 1;
+
+    packageName.clear();
 }
 
 extern "C"
 __attribute__((visibility("default")))
-RiruVersionedModuleInfo *init(Riru *riru) {
-    int apiVersion = riru->riruApiVersion;
+RiruVersionedModuleInfo *init(Riru *_riru) {
+    riru = _riru;
+
+    int apiVersion = _riru->riruApiVersion;
     if (apiVersion < MIN_API_VERSION) {
         return nullptr;
     }
     if (apiVersion > TARGET_API_VERSION)
         apiVersion = TARGET_API_VERSION;
 
-    Path::setModulePath(riru->magiskModulePath);
+    Path::setModulePath(_riru->magiskModulePath);
 
     int size = 0;
     uint8_t *content = IO::readFile(Path::moduleProp(), size);
@@ -170,7 +179,7 @@ RiruVersionedModuleInfo *init(Riru *riru) {
     auto module = new RiruVersionedModuleInfo();
     module->moduleApiVersion = apiVersion;
     module->moduleInfo = RiruModuleInfo{
-            .supportHide = 0,
+            .supportHide = 1,
             .version = static_cast<int>(strtol(versionCode.c_str(), nullptr, 10)),
             .versionName = strdup(versionName.c_str()),
             .onModuleLoaded = &onModuleLoaded,
