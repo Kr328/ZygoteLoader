@@ -16,10 +16,16 @@
 
 #define PACKAGE_SERVER_SERVER ".android"
 
-static Riru *riru;
+static int *riruAllowUnload;
 static void *classes;
 static int classesLength;
 static std::string packageName;
+
+static void enableUnload() {
+    if (riruAllowUnload) {
+        *riruAllowUnload = 1;
+    }
+}
 
 static void onModuleLoaded() {
     classes = IO::readFile(Path::classesDex(), classesLength);
@@ -59,7 +65,7 @@ static void nativeForkSystemServerPost(JNIEnv *env, jclass cls, jint res) {
             );
         }
 
-        *riru->allowUnload = 1;
+        enableUnload();
     }
 
     packageName.clear();
@@ -97,7 +103,7 @@ static void nativeForkAndSpecializePost(JNIEnv *env, jclass cls, jint res) {
             );
         }
 
-        *riru->allowUnload = 1;
+        enableUnload();
     }
 
     packageName.clear();
@@ -132,24 +138,24 @@ static void nativeSpecializeAppProcessPost(JNIEnv *env, jclass clazz) {
         );
     }
 
-    *riru->allowUnload = 1;
+    enableUnload();
 
     packageName.clear();
 }
 
 extern "C"
 __attribute__((visibility("default")))
-RiruVersionedModuleInfo *init(Riru *_riru) {
-    riru = _riru;
-
-    int apiVersion = _riru->riruApiVersion;
+RiruVersionedModuleInfo *init(Riru *riru) {
+    int apiVersion = riru->riruApiVersion;
     if (apiVersion < MIN_API_VERSION) {
         return nullptr;
     }
     if (apiVersion > TARGET_API_VERSION)
         apiVersion = TARGET_API_VERSION;
 
-    Path::setModulePath(_riru->magiskModulePath);
+    riruAllowUnload = riru->allowUnload;
+
+    Path::setModulePath(riru->magiskModulePath);
 
     int size = 0;
     uint8_t *content = IO::readFile(Path::moduleProp(), size);
