@@ -7,6 +7,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.attribute.PosixFilePermissions;
+import java.util.Map;
 
 public final class ZygoteLoader {
     public static final String PACKAGE_SYSTEM_SERVER = ".android";
@@ -30,5 +31,13 @@ public final class ZygoteLoader {
         } else {
             Files.deleteIfExists(path);
         }
+    }
+
+    public static String getPackageName() {
+        return Loader.getPackageName();
+    }
+
+    public static Map<String, String> getProperties() {
+        return Loader.getProperties();
     }
 }

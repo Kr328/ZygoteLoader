@@ -14,7 +14,7 @@ java {
 
 dependencies {
     compileOnly(gradleApi())
-    compileOnly("com.android.tools.build:gradle:7.0.0")
+    compileOnly("com.android.tools.build:gradle:7.0.4")
 }
 
 sourceSets {
@@ -33,7 +33,7 @@ gradlePlugin {
 }
 
 task("generateDynamicSources") {
-    inputs.property("version", version);
+    inputs.property("version", version)
     outputs.dir(dynamicSources)
     tasks.withType(JavaCompile::class.java).forEach { it.dependsOn(this) }
     tasks.withType(KotlinCompile::class.java).forEach { it.dependsOn(this) }

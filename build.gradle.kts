@@ -7,7 +7,7 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath("com.android.tools.build:gradle:7.0.3")
+        classpath("com.android.tools.build:gradle:7.0.4")
     }
 }
 
@@ -23,7 +23,7 @@ subprojects {
 
     afterEvaluate {
         group = "com.github.kr328.zloader"
-        version = "1.5"
+        version = "1.6"
 
         val isAndroid = plugins.hasPlugin("com.android.base")
 

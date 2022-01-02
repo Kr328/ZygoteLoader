@@ -25,10 +25,10 @@ find_package(riru REQUIRED CONFIG)
 
 include_directories(${CMAKE_CURRENT_LIST_DIR})
 
-add_library(loader SHARED main.cpp)
-target_link_libraries(loader common log riru::riru)
+add_library(riru_loader SHARED main.cpp)
+target_link_libraries(riru_loader common log riru::riru)
 
 if (NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
-    add_custom_command(TARGET loader POST_BUILD
-            COMMAND ${CMAKE_STRIP} --strip-all --remove-section=.comment "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/libloader.so")
+    add_custom_command(TARGET riru_loader POST_BUILD
+            COMMAND ${CMAKE_STRIP} --strip-all --remove-section=.comment "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/libriru_loader.so")
 endif ()
