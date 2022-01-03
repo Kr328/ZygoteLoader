@@ -74,4 +74,3 @@ uint8_t *IO::readFile(const std::string &path, int &size) {
 
     return result;
 }
-

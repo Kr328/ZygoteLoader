@@ -17,7 +17,7 @@ static void dumpException(JNIEnv *env) {
 
 void Dex::loadAndInvokeLoader(
         JNIEnv *env,
-        void *dex, int dexLength,
+        const std::string &dexPath,
         const std::string &packageName,
         const std::string &properties
 ) {
@@ -32,15 +32,17 @@ void Dex::loadAndInvokeLoader(
     auto systemClassLoader = env->CallStaticObjectMethod(cClassLoader, mSystemClassLoader);
     RETURN_IF_NULL(systemClassLoader);
 
-    auto cInMemoryClassLoader = env->FindClass("dalvik/system/InMemoryDexClassLoader");
-    RETURN_IF_NULL(cInMemoryClassLoader);
-    auto mInMemoryClassLoader = env->GetMethodID(
-            cInMemoryClassLoader, "<init>", "(Ljava/nio/ByteBuffer;Ljava/lang/ClassLoader;)V");
-    RETURN_IF_NULL(mInMemoryClassLoader);
+    auto cDexClassLoader = env->FindClass("dalvik/system/DexClassLoader");
+    RETURN_IF_NULL(cDexClassLoader);
+    auto mDexClassLoader = env->GetMethodID(
+            cDexClassLoader, "<init>", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/ClassLoader;)V");
+    RETURN_IF_NULL(mDexClassLoader);
     auto classLoader = env->NewObject(
-            cInMemoryClassLoader,
-            mInMemoryClassLoader,
-            env->NewDirectByteBuffer(dex, dexLength),
+            cDexClassLoader,
+            mDexClassLoader,
+            env->NewStringUTF(dexPath.c_str()),
+            static_cast<jobject>(nullptr),
+            static_cast<jobject>(nullptr),
             systemClassLoader
     );
     RETURN_IF_NULL(classLoader);
