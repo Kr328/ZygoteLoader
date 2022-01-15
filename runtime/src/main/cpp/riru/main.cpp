@@ -7,12 +7,9 @@
 #include "util.h"
 #include "packages.h"
 
-#include <fstream>
 #include <string>
 #include <cstring>
 #include <cerrno>
-#include <unistd.h>
-#include <sys/stat.h>
 
 #define MIN_API_VERSION 26
 #define TARGET_API_VERSION 26
@@ -20,6 +17,8 @@
 #define PACKAGE_SERVER_SERVER ".android"
 
 static int *riruAllowUnload;
+static void *classes;
+static int classesLength;
 static std::string packageName;
 
 static void enableUnload() {
@@ -29,27 +28,10 @@ static void enableUnload() {
 }
 
 static void onModuleLoaded() {
-    std::string filename;
-
-    do {
-        filename = "/dev/" + Util::randomFilename(32);
-    } while (access(filename.c_str(), F_OK) == 0);
-
-    std::ifstream input = std::ifstream(Path::prebuiltJar(), std::ios::binary);
-    std::ofstream output = std::ofstream(filename, std::ios::binary);
-
-    if (input && output) {
-        output << input.rdbuf();
-
-        chmod(filename.c_str(), 0644);
-
-        Path::setPublicJar(filename);
-    } else {
-        Log::e(std::string("Copy jar file failed: ") + strerror(errno));
+    classes = IO::readFile(Path::classesDex(), classesLength);
+    if (classes == nullptr) {
+        Log::e(std::string("Load classes.dex failed: ") + strerror(errno));
     }
-
-    input.close();
-    output.close();
 }
 
 static int shouldSkipUid(int uid) {
@@ -63,7 +45,7 @@ static void nativeForkSystemServerPre(
         jlong *permittedCapabilities,
         jlong *effectiveCapabilities
 ) {
-    if (!Path::publicJar().empty()) {
+    if (classes != nullptr) {
         if (Packages::shouldEnableFor(PACKAGE_SERVER_SERVER)) {
             packageName = PACKAGE_SERVER_SERVER;
         }
@@ -77,7 +59,7 @@ static void nativeForkSystemServerPost(JNIEnv *env, jclass cls, jint res) {
 
             Dex::loadAndInvokeLoader(
                     env,
-                    Path::publicJar(),
+                    classes, classesLength,
                     packageName,
                     Prop::getText()
             );
@@ -98,7 +80,7 @@ static void nativeForkAndSpecializePre(
         jobjectArray *whitelistedDataInfoList, jboolean *bindMountAppDataDirs,
         jboolean *bindMountAppStorageDirs
 ) {
-    if (!Path::publicJar().empty()) {
+    if (classes != nullptr) {
         packageName = Util::resolvePackageName(env, *niceName);
         if (!packageName.empty()) {
             if (!Packages::shouldEnableFor(packageName)) {
@@ -115,7 +97,7 @@ static void nativeForkAndSpecializePost(JNIEnv *env, jclass cls, jint res) {
 
             Dex::loadAndInvokeLoader(
                     env,
-                    Path::publicJar(),
+                    classes, classesLength,
                     packageName,
                     Prop::getText()
             );
@@ -134,7 +116,7 @@ static void nativeSpecializeAppProcessPre(
         jboolean *isTopApp, jobjectArray *pkgDataInfoList, jobjectArray *whitelistedDataInfoList,
         jboolean *bindMountAppDataDirs, jboolean *bindMountAppStorageDirs
 ) {
-    if (!Path::publicJar().empty()) {
+    if (classes != nullptr) {
         packageName = Util::resolvePackageName(env, *niceName);
         if (!packageName.empty()) {
             if (!Packages::shouldEnableFor(packageName)) {
@@ -150,7 +132,7 @@ static void nativeSpecializeAppProcessPost(JNIEnv *env, jclass clazz) {
 
         Dex::loadAndInvokeLoader(
                 env,
-                Path::publicJar(),
+                classes, classesLength,
                 packageName,
                 Prop::getText()
         );

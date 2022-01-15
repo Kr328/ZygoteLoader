@@ -23,7 +23,7 @@ subprojects {
 
     afterEvaluate {
         group = "com.github.kr328.zloader"
-        version = "1.7"
+        version = "1.6"
 
         val isAndroid = plugins.hasPlugin("com.android.base")
 

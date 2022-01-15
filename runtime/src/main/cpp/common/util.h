@@ -5,5 +5,4 @@
 
 namespace Util {
     std::string resolvePackageName(JNIEnv *env, jstring niceName);
-    std::string randomFilename(int length);
 }

@@ -6,7 +6,7 @@
 namespace Dex {
     void loadAndInvokeLoader(
             JNIEnv *env,
-            const std::string &dexPath,
+            void *dex, int dexLength,
             const std::string &packageName,
             const std::string &properties
     );

@@ -3,16 +3,13 @@ package com.github.kr328.zloader.gradle
 import com.android.build.api.variant.ApplicationVariant
 import com.android.build.gradle.internal.scope.InternalArtifactType
 import com.android.build.gradle.internal.scope.InternalMultipleArtifactType
-import com.github.kr328.zloader.gradle.tasks.FlattenZipTask
 import com.github.kr328.zloader.gradle.tasks.PackagesTask
 import com.github.kr328.zloader.gradle.tasks.PropertiesTask
 import com.github.kr328.zloader.gradle.util.resolveImpl
 import com.github.kr328.zloader.gradle.util.toCapitalized
 import org.gradle.api.Project
-import org.gradle.api.tasks.bundling.Jar
 import org.gradle.api.tasks.bundling.Zip
 import org.gradle.api.tasks.bundling.ZipEntryCompression
-
 
 object ZygoteLoaderDecorator {
     enum class Loader(val flavorName: String) {
@@ -63,27 +60,6 @@ object ZygoteLoaderDecorator {
             val assets = artifacts.get(InternalArtifactType.MERGED_ASSETS)
             val nativeLibs = artifacts.get(InternalArtifactType.MERGED_NATIVE_LIBS)
             val dex = artifacts.getAll(InternalMultipleArtifactType.DEX).map { it.single() }
-            val res = artifacts.get(InternalArtifactType.MERGED_JAVA_RES)
-
-            val flattenJarRes = tasks.register(
-                "flattenJarRes$capitalized",
-                FlattenZipTask::class.java
-            ) {
-                it.dependsOn(tasks.getByName("package$capitalized"))
-                it.file.set(res)
-                it.output.set(buildDir.resolve("intermediates/flatten_jar_res/${variant.name}"))
-            }
-
-            val packingClassesJar = tasks.register(
-                "packageClassesJar$capitalized",
-                Jar::class.java
-            ) { jar ->
-                jar.dependsOn(flattenJarRes, tasks.getByName("package$capitalized"))
-                jar.from(dex)
-                jar.from(flattenJarRes.get().output)
-                jar.destinationDirectory.set(buildDir.resolve("intermediates/package_classes_jar/${variant.name}"))
-                jar.archiveFileName.set("classes.jar")
-            }
 
             val packagingMagisk = tasks.register(
                 "packageMagisk$capitalized",
@@ -91,7 +67,6 @@ object ZygoteLoaderDecorator {
             ) { zip ->
                 zip.dependsOn(
                     tasks.getByName("package$capitalized"),
-                    packingClassesJar,
                     generatePackages,
                     generateProperties
                 )
@@ -128,10 +103,10 @@ object ZygoteLoaderDecorator {
                         }
                     }
                 }
-                zip.from(packingClassesJar.get().destinationDirectory) {
-                    it.include("classes.jar")
+                zip.from(dex) {
+                    it.include("classes.dex")
                 }
-                zip.from(assets.map { it.asFile.resolve(loader.flavorName) })
+                zip.from(assets.map { it.asFile.resolve("riru") })
                 zip.from(assets) {
                     it.exclude("riru/**", "zygisk/**")
                 }
