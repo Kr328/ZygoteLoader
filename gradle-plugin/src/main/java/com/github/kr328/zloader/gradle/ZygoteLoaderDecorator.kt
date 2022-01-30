@@ -42,7 +42,7 @@ object ZygoteLoaderDecorator {
             "generateProperties$capitalized",
             PropertiesTask::class.java,
         ) {
-            it.outputDir.set(buildDir.resolve("generated/properties"))
+            it.outputDir.set(buildDir.resolve("generated/properties/${variant.name}"))
             it.properties.putAll(properties)
         }
 
@@ -50,7 +50,7 @@ object ZygoteLoaderDecorator {
             "generatePackages$capitalized",
             PackagesTask::class.java,
         ) {
-            it.outputDir.set(buildDir.resolve("generated/packages"))
+            it.outputDir.set(buildDir.resolve("generated/packages/${variant.name}"))
             it.packages.addAll(extension.packages)
         }
 
@@ -67,8 +67,8 @@ object ZygoteLoaderDecorator {
             ) { zip ->
                 zip.dependsOn(
                     tasks.getByName("package$capitalized"),
+                    generateProperties,
                     generatePackages,
-                    generateProperties
                 )
 
                 val outputDir = buildDir.resolve("outputs/magisk")
@@ -106,10 +106,7 @@ object ZygoteLoaderDecorator {
                 zip.from(dex) {
                     it.include("classes.dex")
                 }
-                zip.from(assets.map { it.asFile.resolve("riru") })
-                zip.from(assets) {
-                    it.exclude("riru/**", "zygisk/**")
-                }
+                zip.from(assets)
                 zip.from(generatePackages.get().outputDir)
                 zip.from(generateProperties.get().outputDir)
                 zip.rename { name ->

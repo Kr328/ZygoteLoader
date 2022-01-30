@@ -20,6 +20,28 @@ android {
             }
         }
     }
+
+    productFlavors {
+        flavorDimensions.add("loader")
+        create("riru") {
+            dimension = flavorDimensions[0]
+
+            externalNativeBuild {
+                cmake {
+                    arguments("-DLOADER:STRING=riru")
+                }
+            }
+        }
+        create("zygisk") {
+            dimension = flavorDimensions[0]
+
+            externalNativeBuild {
+                cmake {
+                    arguments("-DLOADER:STRING=zygisk")
+                }
+            }
+        }
+    }
     externalNativeBuild {
         cmake {
             path = file("src/main/cpp/CMakeLists.txt")
@@ -33,4 +55,26 @@ android {
 dependencies {
     implementation("dev.rikka.ndk:riru:26.0.0")
     implementation("dev.rikka.ndk.thirdparty:cxx:1.2.0")
+}
+
+task("sourcesJar", Jar::class) {
+    archiveClassifier.set("sources")
+
+    from(android.sourceSets["main"].java.srcDirs)
+}
+
+afterEvaluate {
+    publishing {
+        publications {
+            create("runtime-riru", MavenPublication::class) {
+                from(components["riruRelease"])
+            }
+            create("runtime-zygisk", MavenPublication::class) {
+                from(components["zygiskRelease"])
+            }
+            withType(MavenPublication::class) {
+                artifact(tasks["sourcesJar"])
+            }
+        }
+    }
 }

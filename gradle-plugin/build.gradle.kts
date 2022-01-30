@@ -1,7 +1,7 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    kotlin("jvm") version "1.6.0"
+    kotlin("jvm") version "1.6.10"
     `java-gradle-plugin`
 }
 
@@ -14,7 +14,7 @@ java {
 
 dependencies {
     compileOnly(gradleApi())
-    compileOnly("com.android.tools.build:gradle:7.0.4")
+    compileOnly("com.android.tools.build:gradle:7.0.0")
 }
 
 sourceSets {
@@ -30,6 +30,12 @@ gradlePlugin {
             implementationClass = "com.github.kr328.zloader.gradle.ZygoteLoaderPlugin"
         }
     }
+}
+
+task("sourcesJar", Jar::class) {
+    archiveClassifier.set("sources")
+
+    from(sourceSets["main"].allSource)
 }
 
 task("generateDynamicSources") {
@@ -57,4 +63,14 @@ task("generateDynamicSources") {
 
 afterEvaluate {
     tasks["sourcesJar"].dependsOn(tasks["generateDynamicSources"])
+
+    publishing {
+        publications {
+            create("gradle-plugin", MavenPublication::class) {
+                from(components["java"])
+
+                artifact(tasks["sourcesJar"])
+            }
+        }
+    }
 }

@@ -1,4 +1,4 @@
-# Sync with src/main/cpp/riru/main.cpp
+# Sync with src/main/cpp/loader_riru.cpp
 export RIRU_MODULE_API_VERSION=26
 export RIRU_MODULE_MIN_API_VERSION=26
 export RIRU_MODULE_MIN_RIRU_VERSION_NAME="26.0.0"

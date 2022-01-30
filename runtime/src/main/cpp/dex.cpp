@@ -1,6 +1,6 @@
 #include "dex.h"
 
-#include "log.h"
+#include "logger.h"
 
 #define LOADER_CLASS_NAME "com.github.kr328.zloader.internal.Loader"
 
@@ -8,18 +8,30 @@
 
 static void dumpException(JNIEnv *env) {
     if (env->ExceptionCheck()) {
-        Log::e("Load dex failed");
-        env->ExceptionDescribe();
+        jthrowable throwable = env->ExceptionOccurred();
+
         env->ExceptionClear();
+
+        jmethodID mToString = env->GetMethodID(env->FindClass("java/lang/Object"),
+                                               "toString",
+                                               "()Ljava/lang/String;");
+        auto description = reinterpret_cast<jstring>(env->CallObjectMethod(throwable, mToString));
+
+        if (env->ExceptionCheck()) {
+            env->ExceptionClear();
+        }
+
+        const char *descriptionString = env->GetStringUTFChars(description, nullptr);
+        Logger::e("Load dex failed: " + std::string(descriptionString));
+        env->ReleaseStringUTFChars(description, descriptionString);
+
         return;
     }
 }
 
-void Dex::loadAndInvokeLoader(
-        JNIEnv *env,
-        void *dex, int dexLength,
-        const std::string &packageName,
-        const std::string &properties
+void Dex::loadAndInvokeLoader(Chunk *file, JNIEnv *env,
+                              const std::string &packageName,
+                              const std::string &properties
 ) {
     auto cClassLoader = env->FindClass("java/lang/ClassLoader");
     RETURN_IF_NULL(cClassLoader);
@@ -40,7 +52,7 @@ void Dex::loadAndInvokeLoader(
     auto classLoader = env->NewObject(
             cInMemoryClassLoader,
             mInMemoryClassLoader,
-            env->NewDirectByteBuffer(dex, dexLength),
+            env->NewDirectByteBuffer(file->getData(), file->getLength()),
             systemClassLoader
     );
     RETURN_IF_NULL(classLoader);
