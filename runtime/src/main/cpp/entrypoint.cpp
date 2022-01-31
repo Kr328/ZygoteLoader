@@ -18,19 +18,17 @@ void entrypoint(Delegate *delegate) {
         return;
     }
 
-    Properties *properties = Properties::load(propertiesFile);
-
+    std::unique_ptr<Properties> properties{Properties::load(propertiesFile)};
     std::string id = properties->get("id");
+    std::string versionName = properties->get("version");
+    std::string versionCode = properties->get("versionCode");
     if (id.empty()) {
         Logger::e("Unknown module");
 
         return;
     }
 
-    delegate->setModuleInfoResolver([properties]() -> ModuleInfo * {
-        std::string versionName = properties->get("version");
-        std::string versionCode = properties->get("versionCode");
-
+    delegate->setModuleInfoResolver([versionCode, versionName]() -> ModuleInfo * {
         auto info = new ModuleInfo();
 
         info->versionName = versionName;
@@ -56,6 +54,8 @@ void entrypoint(Delegate *delegate) {
             );
 
             Dex::loadAndInvokeLoader(dexFile, env, processName, propertiesText);
+
+            delete propertiesFile;
         };
     });
 }
