@@ -14,7 +14,7 @@ java {
 
 dependencies {
     compileOnly(gradleApi())
-    compileOnly("com.android.tools.build:gradle:7.0.0")
+    compileOnly("com.android.tools.build:gradle:7.1.0")
 }
 
 sourceSets {

@@ -7,7 +7,7 @@
 
 class Properties {
 private:
-    Properties(std::unordered_map<std::string, std::string> const &properties);
+    Properties(std::unordered_map<std::string, std::string> properties);
 
 public:
     std::string get(std::string const &key) const;
