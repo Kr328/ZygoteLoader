@@ -8,6 +8,7 @@ abstract class ZygoteLoaderExtension {
         var description: String by this
         var entrypoint: String by this
         var archiveName: String by this
+        var updateJson: String by this
 
         val isValid: Boolean
             get() = getOrDefault("id", "").isNotBlank() &&
