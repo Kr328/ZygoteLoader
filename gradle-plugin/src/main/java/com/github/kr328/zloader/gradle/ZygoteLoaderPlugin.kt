@@ -40,10 +40,10 @@ class ZygoteLoaderPlugin : Plugin<Project> {
                 }
             }
             components.beforeVariants {
-                it.enabled = when (it.flavorName) {
+                it.enable = when (it.flavorName) {
                     ZygoteLoaderDecorator.Loader.Riru.flavorName -> zygote.riru.isValid
                     ZygoteLoaderDecorator.Loader.Zygisk.flavorName -> zygote.zygisk.isValid
-                    else -> it.enabled
+                    else -> it.enable
                 }
             }
             components.onVariants { app ->

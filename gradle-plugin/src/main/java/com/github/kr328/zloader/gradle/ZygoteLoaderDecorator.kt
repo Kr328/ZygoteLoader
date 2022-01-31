@@ -3,6 +3,7 @@ package com.github.kr328.zloader.gradle
 import com.android.build.api.variant.ApplicationVariant
 import com.android.build.gradle.internal.scope.InternalArtifactType
 import com.android.build.gradle.internal.scope.InternalMultipleArtifactType
+import com.github.kr328.zloader.gradle.tasks.FlattenTask
 import com.github.kr328.zloader.gradle.tasks.PackagesTask
 import com.github.kr328.zloader.gradle.tasks.PropertiesTask
 import com.github.kr328.zloader.gradle.util.resolveImpl
@@ -22,42 +23,48 @@ object ZygoteLoaderDecorator {
         variant: ApplicationVariant,
         extension: ZygoteLoaderExtension,
     ): Unit = with(project) {
-        val capitalized = variant.name.toCapitalized()
-
-        val properties = sequence {
-            val output = variant.outputs.single()
-
-            yield("version" to (output.versionName.orNull ?: ""))
-            yield("versionCode" to (output.versionCode.orNull ?: 0).toString())
-            yield("minSdkVersion" to (variant.minSdkVersion.apiLevel.toString()))
-            if (variant.maxSdkVersion != null) {
-                yield("maxSdkVersion" to variant.maxSdkVersion!!.toString())
-            }
-        }.toMap() + when (loader) {
-            Loader.Riru -> extension.riru
-            Loader.Zygisk -> extension.zygisk
-        }
-
-        val generateProperties = tasks.register(
-            "generateProperties$capitalized",
-            PropertiesTask::class.java,
-        ) {
-            it.outputDir.set(buildDir.resolve("generated/properties/${variant.name}"))
-            it.properties.putAll(properties)
-        }
-
-        val generatePackages = tasks.register(
-            "generatePackages$capitalized",
-            PackagesTask::class.java,
-        ) {
-            it.outputDir.set(buildDir.resolve("generated/packages/${variant.name}"))
-            it.packages.addAll(extension.packages)
-        }
-
         afterEvaluate {
             val artifacts = variant.artifacts.resolveImpl()
+            val capitalized = variant.name.toCapitalized()
 
-            val assets = artifacts.get(InternalArtifactType.MERGED_ASSETS)
+            val properties = sequence {
+                val output = variant.outputs.single()
+
+                yield("version" to (output.versionName.orNull ?: ""))
+                yield("versionCode" to (output.versionCode.orNull ?: 0).toString())
+                yield("minSdkVersion" to (variant.minSdkVersion.apiLevel.toString()))
+                if (variant.maxSdkVersion != null) {
+                    yield("maxSdkVersion" to variant.maxSdkVersion!!.toString())
+                }
+            }.toMap() + when (loader) {
+                Loader.Riru -> extension.riru
+                Loader.Zygisk -> extension.zygisk
+            }
+
+            val generateProperties = tasks.register(
+                "generateProperties$capitalized",
+                PropertiesTask::class.java,
+            ) {
+                it.outputDir.set(buildDir.resolve("generated/properties/${variant.name}"))
+                it.properties.putAll(properties)
+            }
+
+            val generatePackages = tasks.register(
+                "generatePackages$capitalized",
+                PackagesTask::class.java,
+            ) {
+                it.outputDir.set(buildDir.resolve("generated/packages/${variant.name}"))
+                it.packages.addAll(extension.packages)
+            }
+
+            val fattenAssets = tasks.register(
+                "flattenAssets$capitalized",
+                FlattenTask::class.java
+            ) {
+                it.outputDir.set(buildDir.resolve("intermediates/flatten_assets/${variant.name}"))
+                it.assetsDir.set(artifacts.get(InternalArtifactType.COMPRESSED_ASSETS))
+            }
+
             val nativeLibs = artifacts.get(InternalArtifactType.MERGED_NATIVE_LIBS)
             val dex = artifacts.getAll(InternalMultipleArtifactType.DEX).map { it.single() }
 
@@ -69,6 +76,7 @@ object ZygoteLoaderDecorator {
                     tasks.getByName("package$capitalized"),
                     generateProperties,
                     generatePackages,
+                    fattenAssets,
                 )
 
                 val outputDir = buildDir.resolve("outputs/magisk")
@@ -106,7 +114,7 @@ object ZygoteLoaderDecorator {
                 zip.from(dex) {
                     it.include("classes.dex")
                 }
-                zip.from(assets)
+                zip.from(fattenAssets.get().outputDir.get().asFile.resolve("assets"))
                 zip.from(generatePackages.get().outputDir)
                 zip.from(generateProperties.get().outputDir)
                 zip.rename { name ->
