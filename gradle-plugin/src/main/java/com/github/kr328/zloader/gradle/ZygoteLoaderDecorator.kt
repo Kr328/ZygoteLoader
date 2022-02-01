@@ -3,6 +3,7 @@ package com.github.kr328.zloader.gradle
 import com.android.build.api.variant.ApplicationVariant
 import com.android.build.gradle.internal.scope.InternalArtifactType
 import com.android.build.gradle.internal.scope.InternalMultipleArtifactType
+import com.github.kr328.zloader.gradle.tasks.CustomizeTask
 import com.github.kr328.zloader.gradle.tasks.FlattenTask
 import com.github.kr328.zloader.gradle.tasks.PackagesTask
 import com.github.kr328.zloader.gradle.tasks.PropertiesTask
@@ -26,6 +27,7 @@ object ZygoteLoaderDecorator {
         afterEvaluate {
             val artifacts = variant.artifacts.resolveImpl()
             val capitalized = variant.name.toCapitalized()
+            val packing = tasks.getByName("package$capitalized")
 
             val properties = sequence {
                 val output = variant.outputs.single()
@@ -57,12 +59,22 @@ object ZygoteLoaderDecorator {
                 it.packages.addAll(extension.packages)
             }
 
-            val fattenAssets = tasks.register(
+            val flattenAssets = tasks.register(
                 "flattenAssets$capitalized",
                 FlattenTask::class.java
             ) {
+                it.dependsOn(packing)
                 it.outputDir.set(buildDir.resolve("intermediates/flatten_assets/${variant.name}"))
                 it.assetsDir.set(artifacts.get(InternalArtifactType.COMPRESSED_ASSETS))
+            }
+
+            val generateCustomize = tasks.register(
+                "generateCustomize$capitalized",
+                CustomizeTask::class.java,
+            ) {
+                it.dependsOn(flattenAssets)
+                it.outputDir.set(buildDir.resolve("generated/customize_sh/${variant.name}"))
+                it.customizeFiles.set(flattenAssets.get().outputDir.get().asFile.resolve("assets/customize.d"))
             }
 
             val nativeLibs = artifacts.get(InternalArtifactType.MERGED_NATIVE_LIBS)
@@ -72,12 +84,7 @@ object ZygoteLoaderDecorator {
                 "packageMagisk$capitalized",
                 Zip::class.java
             ) { zip ->
-                zip.dependsOn(
-                    tasks.getByName("package$capitalized"),
-                    generateProperties,
-                    generatePackages,
-                    fattenAssets,
-                )
+                zip.dependsOn(generateProperties, generatePackages, generateCustomize, flattenAssets)
 
                 val outputDir = buildDir.resolve("outputs/magisk")
                     .resolve("${variant.flavorName}")
@@ -114,7 +121,8 @@ object ZygoteLoaderDecorator {
                 zip.from(dex) {
                     it.include("classes.dex")
                 }
-                zip.from(fattenAssets.get().outputDir.get().asFile.resolve("assets"))
+                zip.from(flattenAssets.get().outputDir.get().asFile.resolve("assets"))
+                zip.from(generateCustomize.get().outputDir)
                 zip.from(generatePackages.get().outputDir)
                 zip.from(generateProperties.get().outputDir)
                 zip.rename { name ->
