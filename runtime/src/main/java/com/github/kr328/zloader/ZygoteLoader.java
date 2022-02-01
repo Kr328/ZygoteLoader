@@ -33,6 +33,10 @@ public final class ZygoteLoader {
         }
     }
 
+    public static String getDataDirectory() {
+        return Loader.getDataDirectory();
+    }
+
     public static String getPackageName() {
         return Loader.getPackageName();
     }

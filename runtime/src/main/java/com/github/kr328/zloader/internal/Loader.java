@@ -1,19 +1,15 @@
 package com.github.kr328.zloader.internal;
 
 import android.util.Log;
-import android.util.Pair;
 
-import java.io.IOException;
-import java.io.StringReader;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
-import java.util.Properties;
-import java.util.stream.Collectors;
 
 public final class Loader {
     private static final String TAG = "ZygoteLoader[Java]";
-    private static final String DYNAMIC_PACKAGES_PATH = "/data/misc/zygote-loader";
     private static String dynamicPackagesPath;
+    private static String dataDirectory;
 
     private static String packageName;
     private static Map<String, String> properties;
@@ -22,39 +18,35 @@ public final class Loader {
         init(packageName, properties);
     }
 
-    public static void init(final String packageName, final String properties) {
-        final Properties prop = new Properties();
+    public static void init(final String packageName, final String propertiesText) {
+        final Map<String, String> properties = new HashMap<>();
 
-        try {
-            prop.load(new StringReader(properties));
-        } catch (IOException e) {
-            Log.e(TAG, "Load properties: " + properties, e);
+        for (String line : propertiesText.split("\n")) {
+            String[] kv = line.split("=", 2);
+            if (kv.length != 2)
+                continue;
+
+            properties.put(kv[0].trim(), kv[1].trim());
+        }
+
+        final String dataDirectory = properties.get("dataDirectory");
+        if (dataDirectory == null) {
+            Log.e(TAG, "Data directory not found");
 
             return;
         }
 
-        final String moduleId = prop.getProperty("id", "");
-        final String moduleName = prop.getProperty("name", "");
-        if (moduleId.isEmpty() || moduleName.isEmpty()) {
-            Log.e(TAG, "Module id/name not found");
+        final String entrypointName = properties.get("entrypoint");
+        if (entrypointName == null) {
+            Log.e(TAG, "Entrypoint not found");
 
             return;
         }
 
-        dynamicPackagesPath = DYNAMIC_PACKAGES_PATH + "/" + moduleId;
-
-        final String entrypointName = prop.getProperty("entrypoint", "");
-        if (entrypointName.isEmpty()) {
-            Log.e(TAG, "Entry of module " + moduleName + " not found");
-
-            return;
-        }
-
+        Loader.dynamicPackagesPath = dataDirectory + "/packages";
+        Loader.dataDirectory = dataDirectory;
         Loader.packageName = packageName;
-        Loader.properties = prop.entrySet().stream()
-                .map((entry) -> new Pair<>((String) entry.getKey(), entry.getValue().toString()))
-                .collect(Collectors.toMap(p -> p.first, p -> p.second));
-        Loader.properties = Collections.unmodifiableMap(Loader.properties);
+        Loader.properties = Collections.unmodifiableMap(properties);
 
         try {
             final ClassLoader loader = Loader.class.getClassLoader();
@@ -64,12 +56,16 @@ public final class Loader {
 
             loader.loadClass(entrypointName).getMethod("main").invoke(null);
         } catch (ReflectiveOperationException e) {
-            Log.e(moduleName, "Invoke main of " + entrypointName, e);
+            Log.e(TAG, "Invoke main of " + entrypointName, e);
         }
     }
 
     public static String getDynamicPackagesPath() {
         return dynamicPackagesPath;
+    }
+
+    public static String getDataDirectory() {
+        return dataDirectory;
     }
 
     public static Map<String, String> getProperties() {
