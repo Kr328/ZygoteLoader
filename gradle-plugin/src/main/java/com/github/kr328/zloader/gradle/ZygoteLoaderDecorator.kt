@@ -125,9 +125,6 @@ object ZygoteLoaderDecorator {
                 zip.from(generateCustomize.get().outputDir)
                 zip.from(generatePackages.get().outputDir)
                 zip.from(generateProperties.get().outputDir)
-                zip.rename { name ->
-                    if (name == "dist-gitattributes") ".gitattributes" else name
-                }
             }
 
             tasks.getByName("assemble$capitalized").dependsOn(packagingMagisk)
