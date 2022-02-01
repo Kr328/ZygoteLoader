@@ -6,8 +6,6 @@ import org.gradle.api.provider.MapProperty
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
-import java.io.StringWriter
-import java.util.*
 
 abstract class PropertiesTask : DefaultTask() {
     @get:Input
@@ -18,19 +16,12 @@ abstract class PropertiesTask : DefaultTask() {
 
     @TaskAction
     fun doAction() {
-        val writer = StringWriter()
-
-        Properties().apply {
-            putAll(properties.get())
-            store(writer, null)
+        val text = properties.get().toList().joinToString(separator = "\n", postfix = "\n") {
+            "${it.first}=${it.second}"
         }
 
         outputDir.get().asFile.apply {
             mkdirs()
-
-            val text = writer.toString().lineSequence()
-                .filterNot { it.startsWith("#") }
-                .joinToString(separator = "\n")
 
             resolve("module.prop").writeText(text)
         }
