@@ -8,32 +8,17 @@ static std::string strip(const std::string_view &input) {
     return std::string(start_it, end_it.base());
 }
 
-Properties::Properties(std::unordered_map<std::string, std::string> properties) :
-        properties(std::move(properties)) {
-}
-
-std::string Properties::get(const std::string &key) const {
-    if (auto value = properties.find(key); value == properties.end()) {
-        return "";
-    } else {
-        return value->second;
-    }
-}
-
-Properties *Properties::load(Chunk *chunk) {
-    std::string_view text{static_cast<char *>(chunk->getData()),
-                          static_cast<size_t>(chunk->getLength())};
-
-    std::unordered_map<std::string, std::string> properties;
+void Properties::forEach(Chunk *data, PropertyReceiver const& block) {
+    std::string_view text{static_cast<char *>(data->getData()),
+                          static_cast<size_t>(data->getLength())};
 
     for (size_t start = 0, end; start != std::string::npos; start = end) {
         end = text.find_first_of('\n', start + 1);
         if (end != std::string::npos) {
             auto line = text.substr(start, end);
             if (size_t split = line.find('='); split != std::string::npos) {
-                properties[strip(line.substr(0, split))] = strip(line.substr(split + 1));
+                block(strip(line.substr(0, split)), strip(line.substr(split + 1)));
             }
         }
     }
-    return new Properties(std::move(properties));
 }

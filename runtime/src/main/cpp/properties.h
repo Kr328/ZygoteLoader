@@ -2,19 +2,13 @@
 
 #include "chunk.h"
 
-#include <unordered_map>
 #include <string>
+#include <functional>
 
 class Properties {
-private:
-    Properties(std::unordered_map<std::string, std::string> properties);
+public:
+    using PropertyReceiver = std::function<void (std::string const &key, std::string const &value)>;
 
 public:
-    std::string get(std::string const &key) const;
-
-public:
-    static Properties *load(Chunk *chunk);
-
-private:
-    std::unordered_map<std::string, std::string> properties;
+    static void forEach(Chunk *data, const PropertyReceiver& block);
 };

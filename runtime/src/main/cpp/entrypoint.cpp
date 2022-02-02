@@ -18,21 +18,31 @@ void entrypoint(Delegate *delegate) {
         return;
     }
 
-    std::unique_ptr<Properties> properties{Properties::load(propertiesFile)};
-    std::string versionName = properties->get("version");
-    std::string versionCode = properties->get("versionCode");
-    std::string dataDirectory = properties->get("dataDirectory");
+    std::string dataDirectory;
+    Properties::forEach(propertiesFile, [&dataDirectory](auto key, auto value) {
+        if (key == "dataDirectory") {
+            dataDirectory = value;
+        }
+    });
     if (dataDirectory.empty()) {
-        Logger::e("Unknown module directory");
+        Logger::e("Unknown module data directory");
 
         return;
     }
 
-    delegate->setModuleInfoResolver([versionCode, versionName]() -> ModuleInfo * {
+    delegate->setModuleInfoResolver([propertiesFile]() -> ModuleInfo * {
         auto info = new ModuleInfo();
 
-        info->versionName = versionName;
-        info->versionCode = static_cast<int>(strtol(versionCode.c_str(), nullptr, 10));
+        info->versionName = "";
+        info->versionCode = 0;
+
+        Properties::forEach(propertiesFile, [info](auto key, auto value) {
+           if (key == "version") {
+               info->versionName = value;
+           } else if (key == "versionCode") {
+               info->versionCode = static_cast<int>(strtol(value.c_str(), nullptr, 10));
+           }
+        });
 
         return info;
     });
