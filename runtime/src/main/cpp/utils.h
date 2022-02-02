@@ -9,9 +9,9 @@
 
 class IOUtils {
 public:
-    static int readFull(int fd, void *buffer, int size);
-    static int writeFull(int fd, const void *buffer, int size);
-    static int sendAll(int out, int in, int size);
+    static int readFull(int fd, void *buffer, uint32_t size);
+    static int writeFull(int fd, const void *buffer, uint32_t size);
+    static int sendAll(int out, int in, uint32_t size);
     static Chunk *readFile(std::string const &path);
     static std::string resolveFdPath(int fd);
     static std::string latestError();

@@ -8,7 +8,7 @@ public:
     ~Chunk();
 
 public:
-    int getLength() const;
+    uint32_t getLength() const;
     const void *getData() const;
     void *getData();
 

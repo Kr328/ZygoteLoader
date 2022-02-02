@@ -8,7 +8,7 @@
 #include <sys/sendfile.h>
 #include <sys/stat.h>
 
-int IOUtils::readFull(int fd, void *buffer, int size) {
+int IOUtils::readFull(int fd, void *buffer, uint32_t size) {
     auto ptr = static_cast<uint8_t *>(buffer);
     auto remain = size;
 
@@ -22,10 +22,10 @@ int IOUtils::readFull(int fd, void *buffer, int size) {
         remain -= r;
     }
 
-    return size;
+    return static_cast<int>(size);
 }
 
-int IOUtils::writeFull(int fd, const void *buffer, int size) {
+int IOUtils::writeFull(int fd, const void *buffer, uint32_t size) {
     auto ptr = static_cast<const uint8_t *>(buffer);
     auto remain = size;
 
@@ -39,7 +39,7 @@ int IOUtils::writeFull(int fd, const void *buffer, int size) {
         remain -= r;
     }
 
-    return size;
+    return static_cast<int>(size);
 }
 
 Chunk *IOUtils::readFile(const std::string &path) {
@@ -63,8 +63,8 @@ Chunk *IOUtils::readFile(const std::string &path) {
     return result;
 }
 
-int IOUtils::sendAll(int out, int in, int size) {
-    int remain = size;
+int IOUtils::sendAll(int out, int in, uint32_t size) {
+    auto remain = size;
 
     while (remain > 0) {
         int r = sendfile(out, in, nullptr, remain);
@@ -75,7 +75,7 @@ int IOUtils::sendAll(int out, int in, int size) {
         remain -= r;
     }
 
-    return size;
+    return static_cast<int>(size);
 }
 
 std::string IOUtils::resolveFdPath(int fd) {

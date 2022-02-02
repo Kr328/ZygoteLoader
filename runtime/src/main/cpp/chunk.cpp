@@ -11,7 +11,7 @@ Chunk::~Chunk() {
     delete[] this->data;
 }
 
-int Chunk::getLength() const {
+uint32_t Chunk::getLength() const {
     return length;
 }
 
