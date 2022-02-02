@@ -19,11 +19,11 @@ void entrypoint(Delegate *delegate) {
     }
 
     std::unique_ptr<Properties> properties{Properties::load(propertiesFile)};
-    std::string id = properties->get("id");
     std::string versionName = properties->get("version");
     std::string versionCode = properties->get("versionCode");
-    if (id.empty()) {
-        Logger::e("Unknown module");
+    std::string dataDirectory = properties->get("dataDirectory");
+    if (dataDirectory.empty()) {
+        Logger::e("Unknown module directory");
 
         return;
     }
@@ -37,12 +37,11 @@ void entrypoint(Delegate *delegate) {
         return info;
     });
 
-    delegate->setLoaderFactory([delegate, id, propertiesFile, dexFile](
+    delegate->setLoaderFactory([delegate, dataDirectory, propertiesFile, dexFile](
             JNIEnv *env, std::string const &processName
     ) -> Loader {
         if (!delegate->isResourceExisted("packages/" + processName)) {
-            if (!delegate->isResourceExisted(
-                    "/data/misc/zygote-delegate/" + id + "/" + processName)) {
+            if (!delegate->isResourceExisted(dataDirectory + "/packages/" + processName)) {
                 return [](JNIEnv *) {};
             }
         }
