@@ -7,10 +7,11 @@
 
 class Dex {
 public:
-    static void loadAndInvokeLoader(
+    static bool loadAndInvokeLoader(
             Chunk *file,
             JNIEnv *env,
             std::string const &packageName,
-            std::string const &properties
+            std::string const &properties,
+            bool setTrusted
     );
 };

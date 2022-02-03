@@ -4,6 +4,7 @@
 #include "logger.h"
 #include "properties.h"
 #include "dex.h"
+#include "utils.h"
 
 #include <string>
 
@@ -62,7 +63,13 @@ void entrypoint(Delegate *delegate) {
                     propertiesFile->getLength()
             );
 
-            Dex::loadAndInvokeLoader(dexFile, env, processName, propertiesText);
+            Dex::loadAndInvokeLoader(
+                    dexFile,
+                    env,
+                    processName,
+                    propertiesText,
+                    processName != PACKAGE_NAME_SYSTEM_SERVER
+            );
 
             delete propertiesFile;
         };

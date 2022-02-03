@@ -14,6 +14,9 @@ public final class Loader {
     private static String packageName;
     private static Map<String, String> properties;
 
+    private static native int privilegeCallBridge32(int func, int arg1, int arg2);
+    private static native long privilegeCallBridge64(long func, long arg1, long arg2);
+
     public static void load(final String packageName, final String properties) {
         init(packageName, properties);
     }
