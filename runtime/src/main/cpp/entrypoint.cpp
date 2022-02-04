@@ -49,7 +49,7 @@ void entrypoint(Delegate *delegate) {
     });
 
     delegate->setLoaderFactory([delegate, dataDirectory, propertiesFile, dexFile](
-            JNIEnv *env, std::string const &processName
+            JNIEnv *env, std::string const &processName, bool isDebuggable
     ) -> Loader {
         if (!delegate->isResourceExisted("packages/" + processName)) {
             if (!delegate->isResourceExisted(dataDirectory + "/packages/" + processName)) {
@@ -57,7 +57,7 @@ void entrypoint(Delegate *delegate) {
             }
         }
 
-        return [processName, propertiesFile, dexFile](JNIEnv *env) {
+        return [processName, isDebuggable, propertiesFile, dexFile](JNIEnv *env) {
             std::string propertiesText = std::string(
                     static_cast<char *>(propertiesFile->getData()),
                     propertiesFile->getLength()
@@ -68,7 +68,8 @@ void entrypoint(Delegate *delegate) {
                     env,
                     processName,
                     propertiesText,
-                    processName != PACKAGE_NAME_SYSTEM_SERVER
+                    processName != PACKAGE_NAME_SYSTEM_SERVER,
+                    isDebuggable
             );
 
             delete propertiesFile;

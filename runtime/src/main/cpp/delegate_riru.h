@@ -10,7 +10,7 @@ public:
     ZygoteLoaderDelegate(std::string const &moduleDir);
 
 public:
-    void preAppSpecialize(JNIEnv *env, jstring niceName);
+    void preAppSpecialize(JNIEnv *env, jstring niceName, jint runtimeRuntime);
     void postAppSpecialize(JNIEnv *env);
     void preServerSpecialize(JNIEnv *env);
     void postServerSpecialize(JNIEnv *env);
@@ -29,6 +29,6 @@ private:
     std::string currentProcessName;
 
     ModuleInfoResolver resolver = []() { return nullptr; };
-    LoaderFactory factory = [](JNIEnv *, std::string const &) { return [](JNIEnv *) {}; };
+    LoaderFactory factory = [](JNIEnv *, std::string const &, bool) { return [](JNIEnv *) {}; };
     Loader loader = [](JNIEnv *) {};
 };

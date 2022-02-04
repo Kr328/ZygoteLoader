@@ -42,10 +42,10 @@ void ZygoteLoaderDelegate::setLoaderFactory(LoaderFactory _factory) {
     factory = _factory;
 }
 
-void ZygoteLoaderDelegate::preAppSpecialize(JNIEnv *env, jstring niceName) {
+void ZygoteLoaderDelegate::preAppSpecialize(JNIEnv *env, jstring niceName, jint runtimeFlags) {
     currentProcessName = JNIUtils::resolvePackageName(env, niceName);
 
-    loader = factory(env, currentProcessName);
+    loader = factory(env, currentProcessName, (runtimeFlags & ZYGOTE_DEBUG_ENABLE_JDWP) != 0);
 }
 
 void ZygoteLoaderDelegate::postAppSpecialize(JNIEnv *env) {
@@ -55,7 +55,7 @@ void ZygoteLoaderDelegate::postAppSpecialize(JNIEnv *env) {
 void ZygoteLoaderDelegate::preServerSpecialize(JNIEnv *env) {
     currentProcessName = PACKAGE_NAME_SYSTEM_SERVER;
 
-    loader = factory(env, currentProcessName);
+    loader = factory(env, currentProcessName, SystemProperties::isDebuggable());
 }
 
 void ZygoteLoaderDelegate::postServerSpecialize(JNIEnv *env) {
@@ -109,8 +109,8 @@ static void nativeForkAndSpecializePre(
 ) {
     skipNext = true;
 
-    if (niceName != nullptr) {
-        delegate->preAppSpecialize(env, *niceName);
+    if (niceName != nullptr && runtimeFlags != nullptr) {
+        delegate->preAppSpecialize(env, *niceName, *runtimeFlags);
 
         skipNext = false;
     }
@@ -135,8 +135,8 @@ static void nativeSpecializeAppProcessPre(
 ) {
     skipNext = true;
 
-    if (niceName != nullptr) {
-        delegate->preAppSpecialize(env, *niceName);
+    if (niceName != nullptr && runtimeFlags != nullptr) {
+        delegate->preAppSpecialize(env, *niceName, *runtimeFlags);
 
         skipNext = false;
     }

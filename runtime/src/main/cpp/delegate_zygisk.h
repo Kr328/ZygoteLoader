@@ -37,5 +37,5 @@ private:
     std::string currentProcessName;
 
     Loader loader = [](JNIEnv *) {};
-    LoaderFactory factory = [](JNIEnv *, std::string const &) { return [](JNIEnv *) {}; };
+    LoaderFactory factory = [](JNIEnv *, std::string const &, bool) { return [](JNIEnv *) {}; };
 };

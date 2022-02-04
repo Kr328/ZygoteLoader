@@ -7,6 +7,8 @@
 
 #define PACKAGE_NAME_SYSTEM_SERVER ".android"
 
+#define ZYGOTE_DEBUG_ENABLE_JDWP 1u
+
 class IOUtils {
 public:
     static int readFull(int fd, void *buffer, uint32_t size);
@@ -26,4 +28,10 @@ public:
 class JNIUtils {
 public:
     static std::string resolvePackageName(JNIEnv *env, jstring niceName);
+};
+
+class SystemProperties {
+public:
+    static bool isDebuggable();
+    static int getSdkVersion();
 };

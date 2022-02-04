@@ -11,7 +11,7 @@ struct ModuleInfo {
 };
 
 using Loader = std::function<void(JNIEnv *env)>;
-using LoaderFactory = std::function<Loader(JNIEnv *env, std::string processName)>;
+using LoaderFactory = std::function<Loader(JNIEnv *env, std::string processName, bool isDebuggable)>;
 using ModuleInfoResolver = std::function<ModuleInfo *()>;
 
 class Delegate {

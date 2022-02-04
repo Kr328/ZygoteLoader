@@ -99,7 +99,7 @@ static void *resolvePrivilegeSymbol(JNIEnv *env, jclass cLoader, jmethodID mPriv
 #endif
 }
 
-static bool setClassLoaderTrusted(JNIEnv *env, void *runtime, set_java_debuggable_func setJavaDebuggable, jobject oClassLoader) {
+static bool setClassLoaderTrusted(JNIEnv *env, void *runtime, set_java_debuggable_func setJavaDebuggable, jobject oClassLoader, bool isDebuggable) {
     jclass cBaseDexClassLoader = env->FindClass("dalvik/system/BaseDexClassLoader");
     RETURN_IF_NULL(cBaseDexClassLoader);
 
@@ -147,7 +147,9 @@ static bool setClassLoaderTrusted(JNIEnv *env, void *runtime, set_java_debuggabl
         }
     }
 
-    setJavaDebuggable(runtime, false);
+    if (!isDebuggable) {
+        setJavaDebuggable(runtime, false);
+    }
 
     return true;
 }
@@ -155,7 +157,7 @@ static bool setClassLoaderTrusted(JNIEnv *env, void *runtime, set_java_debuggabl
 bool Dex::loadAndInvokeLoader(Chunk *file, JNIEnv *env,
                               const std::string &packageName,
                               const std::string &properties,
-                              bool setTrusted
+                              bool setTrusted, bool isDebuggable
 ) {
     auto cClassLoader = env->FindClass("java/lang/ClassLoader");
     RETURN_IF_NULL(cClassLoader);
@@ -200,7 +202,7 @@ bool Dex::loadAndInvokeLoader(Chunk *file, JNIEnv *env,
         auto setJavaDebuggable = reinterpret_cast<set_java_debuggable_func>(resolvePrivilegeSymbol(env, cLoader, mPrivilege, "_ZN3art7Runtime17SetJavaDebuggableEb"));
         RETURN_IF_NULL(setJavaDebuggable);
 
-        if (!setClassLoaderTrusted(env, *runtimeInstance, setJavaDebuggable, classLoader)) {
+        if (!setClassLoaderTrusted(env, *runtimeInstance, setJavaDebuggable, classLoader, isDebuggable)) {
             return false;
         }
     }

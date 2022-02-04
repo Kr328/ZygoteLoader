@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <sys/sendfile.h>
 #include <sys/stat.h>
+#include <sys/_system_properties.h>
 
 int IOUtils::readFull(int fd, void *buffer, uint32_t size) {
     auto ptr = static_cast<uint8_t *>(buffer);
@@ -141,4 +142,20 @@ std::string JNIUtils::resolvePackageName(JNIEnv *env, jstring niceName) {
     env->ReleaseStringUTFChars(niceName, _niceName);
 
     return s;
+}
+
+bool SystemProperties::isDebuggable() {
+    char buffer[16] = {0};
+
+    __system_property_get("ro.debuggable", buffer);
+
+    return buffer[0] == '1';
+}
+
+int SystemProperties::getSdkVersion() {
+    char buffer[128] = {0};
+
+    __system_property_get("ro.build.version.sdk", buffer);
+
+    return strtol(buffer, nullptr, 10);
 }

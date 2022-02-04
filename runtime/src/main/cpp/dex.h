@@ -12,6 +12,6 @@ public:
             JNIEnv *env,
             std::string const &packageName,
             std::string const &properties,
-            bool setTrusted
+            bool setTrusted, bool isDebuggable
     );
 };

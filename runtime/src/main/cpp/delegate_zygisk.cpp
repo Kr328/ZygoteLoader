@@ -98,7 +98,7 @@ void ZygoteLoaderModule::onLoad(zygisk::Api *_api, JNIEnv *_env) {
 void ZygoteLoaderModule::preAppSpecialize(zygisk::AppSpecializeArgs *args) {
     currentProcessName = JNIUtils::resolvePackageName(env, args->nice_name);
 
-    loader = factory(env, currentProcessName);
+    loader = factory(env, currentProcessName, (args->runtime_flags & ZYGOTE_DEBUG_ENABLE_JDWP) != 0);
 }
 
 void ZygoteLoaderModule::postAppSpecialize(const zygisk::AppSpecializeArgs *args) {
@@ -108,7 +108,7 @@ void ZygoteLoaderModule::postAppSpecialize(const zygisk::AppSpecializeArgs *args
 void ZygoteLoaderModule::preServerSpecialize(zygisk::ServerSpecializeArgs *args) {
     currentProcessName = PACKAGE_NAME_SYSTEM_SERVER;
 
-    loader = factory(env, currentProcessName);
+    loader = factory(env, currentProcessName, SystemProperties::isDebuggable());
 }
 
 void ZygoteLoaderModule::postServerSpecialize(const zygisk::ServerSpecializeArgs *args) {
