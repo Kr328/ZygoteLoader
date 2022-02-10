@@ -1,17 +1,15 @@
 #pragma once
 
-#include "chunk.h"
-
 #include <string>
 #include <jni.h>
 
 class Dex {
 public:
-    static bool loadAndInvokeLoader(
-            Chunk *file,
+    static void loadAndInvokeLoader(
             JNIEnv *env,
-            std::string const &packageName,
-            std::string const &properties,
+            const std::string &packageName,
+            const void *dexFile, size_t dexFileLength,
+            const void *propertiesFile, size_t propertiesLength,
             bool setTrusted, bool isDebuggable
     );
 };

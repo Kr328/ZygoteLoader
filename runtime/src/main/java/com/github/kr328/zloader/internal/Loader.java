@@ -2,10 +2,13 @@ package com.github.kr328.zloader.internal;
 
 import android.util.Log;
 
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+@SuppressWarnings({"JavaJniMissingFunction", "unused"})
 public final class Loader {
     private static final String TAG = "ZygoteLoader[Java]";
     private static String dynamicPackagesPath;
@@ -14,11 +17,15 @@ public final class Loader {
     private static String packageName;
     private static Map<String, String> properties;
 
-    private static native int privilegeCallBridge32(int func, int arg1, int arg2);
-    private static native long privilegeCallBridge64(long func, long arg1, long arg2);
+    private static native int privilegeCallBridge(int func, int arg1, int arg2);
+    private static native long privilegeCallBridge(long func, long arg1, long arg2);
 
-    public static void load(final String packageName, final String properties) {
-        init(packageName, properties);
+    public static void load(final String packageName, final ByteBuffer properties) {
+        try {
+            init(packageName, StandardCharsets.UTF_8.decode(properties).toString());
+        } catch (Throwable throwable) {
+            Log.e(TAG, "doLoad: " + throwable, throwable);
+        }
     }
 
     public static void init(final String packageName, final String propertiesText) {

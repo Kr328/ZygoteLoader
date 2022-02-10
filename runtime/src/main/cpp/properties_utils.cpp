@@ -1,4 +1,4 @@
-#include "properties.h"
+#include "properties_utils.h"
 
 #include <utility>
 
@@ -8,9 +8,8 @@ static std::string strip(const std::string_view &input) {
     return std::string(start_it, end_it.base());
 }
 
-void Properties::forEach(Chunk *data, PropertyReceiver const& block) {
-    std::string_view text{static_cast<char *>(data->getData()),
-                          static_cast<size_t>(data->getLength())};
+void PropertiesUtils::forEach(const void *data, size_t length, PropertyReceiver const& block) {
+    std::string_view text{static_cast<const char *>(data), static_cast<size_t>(length)};
 
     for (size_t start = 0, end; start != std::string::npos; start = end) {
         end = text.find_first_of('\n', start + 1);

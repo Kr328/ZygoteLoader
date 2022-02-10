@@ -1,7 +1,6 @@
 #pragma once
 
 #include "delegate.h"
-#include "chunk.h"
 
 #include <string>
 
@@ -10,14 +9,18 @@ public:
     ZygoteLoaderDelegate(std::string const &moduleDir);
 
 public:
-    void preAppSpecialize(JNIEnv *env, jstring niceName, jint runtimeRuntime);
+    void initialize();
+    void releaseResourcesCache();
+
+public:
+    void preAppSpecialize(JNIEnv *env, jstring niceName, jint runtimeFlags);
     void postAppSpecialize(JNIEnv *env);
     void preServerSpecialize(JNIEnv *env);
     void postServerSpecialize(JNIEnv *env);
 
 public:
-    Chunk *readResource(const std::string &path) override;
-    bool isResourceExisted(const std::string &path) override;
+    Resource *getResource(ResourceType type) override;
+    bool shouldEnableForPackage(const std::string &packageName) override;
     void setModuleInfoResolver(ModuleInfoResolver resolver) override;
     void setLoaderFactory(LoaderFactory factory) override;
 
@@ -26,7 +29,11 @@ public:
 
 private:
     std::string moduleDirectory;
+    std::string dataDirectory;
     std::string currentProcessName;
+
+    Resource *moduleProp = nullptr;
+    Resource *classesDex = nullptr;
 
     ModuleInfoResolver resolver = []() { return nullptr; };
     LoaderFactory factory = [](JNIEnv *, std::string const &, bool) { return [](JNIEnv *) {}; };

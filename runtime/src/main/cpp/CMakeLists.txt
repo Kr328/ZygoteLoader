@@ -25,7 +25,10 @@ set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} ${LINKER_FLAGS}")
 
 find_package(cxx REQUIRED CONFIG)
 
-add_library(base STATIC entrypoint.cpp chunk.cpp properties.cpp scoped.cpp dex.cpp logger.cpp utils.cpp)
+add_library(base STATIC
+        entrypoint.cpp
+        scoped.cpp dex.cpp logger.cpp
+        properties_utils.cpp jni_utils.cpp process_utils.cpp linker_utils.cpp serial_utils.cpp)
 target_link_libraries(base log cxx::cxx)
 
 if(LOADER STREQUAL "zygisk")

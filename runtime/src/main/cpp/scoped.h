@@ -1,5 +1,7 @@
 #pragma once
 
+#include <stdint.h>
+
 class ScopedFileDescriptor {
 public:
     ScopedFileDescriptor(int fd);
@@ -9,5 +11,18 @@ public:
     operator int() const;
 
 public:
-    int fd;
+    int const fd;
+};
+
+class ScopedMemoryMapping {
+public:
+    ScopedMemoryMapping(int fd, size_t length, int protect);
+    ~ScopedMemoryMapping();
+
+public:
+    operator void *() const;
+
+public:
+    void * const base;
+    size_t const length;
 };

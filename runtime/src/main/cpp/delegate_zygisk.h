@@ -1,19 +1,11 @@
 #pragma once
 
 #include "delegate.h"
+#include "scoped.h"
 
 #include "ext/zygisk.hpp"
 
 #include <string>
-
-enum FileCommand : uint8_t {
-    READ, IS_EXIST
-};
-
-struct FileRequest {
-    FileCommand command;
-    char path[];
-};
 
 class ZygoteLoaderModule : public zygisk::ModuleBase, public Delegate {
 public:
@@ -24,16 +16,23 @@ public:
     void postServerSpecialize(const zygisk::ServerSpecializeArgs *args) override;
 
 public:
-    Chunk *readResource(const std::string &path) override;
-    bool isResourceExisted(const std::string &path) override;
+    Resource *getResource(ResourceType type) override;
+    bool shouldEnableForPackage(const std::string &packageName) override;
     void setModuleInfoResolver(ModuleInfoResolver provider) override;
     void setLoaderFactory(LoaderFactory factory) override;
+
+private:
+    bool isInitialized();
+    void initialize();
+    void releaseResourcesCache();
 
 private:
     zygisk::Api *api = nullptr;
     JNIEnv *env = nullptr;
 
-    std::string moduleDirectory;
+    Resource *moduleProp = nullptr;
+    Resource *classesDex = nullptr;
+
     std::string currentProcessName;
 
     Loader loader = [](JNIEnv *) {};

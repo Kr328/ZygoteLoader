@@ -1,37 +1,103 @@
 #include "delegate_riru.h"
 
 #include "entrypoint.h"
-#include "utils.h"
+#include "scoped.h"
+#include "logger.h"
+#include "process_utils.h"
+#include "properties_utils.h"
 
 #include "riru.h"
 
 #include <string>
 #include <unistd.h>
-#include <memory>
+#include <fcntl.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
 
 #define MIN_API_VERSION 26
 #define TARGET_API_VERSION 26
-
-static std::string resolveModuleAbsolutePath(std::string const &moduleDir, std::string const &path) {
-    if (!path.empty() && path[0] == '/') {
-        return path;
-    }
-
-    return moduleDir + "/" + path;
-}
 
 ZygoteLoaderDelegate::ZygoteLoaderDelegate(const std::string &moduleDir) {
     moduleDirectory = moduleDir;
 }
 
-Chunk *ZygoteLoaderDelegate::readResource(const std::string &path) {
-    return IOUtils::readFile(resolveModuleAbsolutePath(moduleDirectory, path));
+void ZygoteLoaderDelegate::initialize() {
+    Resource *modulePropRes = getResource(MODULE_PROP);
+    PropertiesUtils::forEach(modulePropRes->base, modulePropRes->length, [this](auto key, auto value) {
+        if (key == "dataDirectory") {
+            dataDirectory = value;
+        }
+    });
 }
 
-bool ZygoteLoaderDelegate::isResourceExisted(const std::string &path) {
-    std::string absolutePath = resolveModuleAbsolutePath(moduleDirectory, path);
+void ZygoteLoaderDelegate::releaseResourcesCache() {
+    if (moduleProp != nullptr) {
+        munmap(const_cast<void*>(moduleProp->base), moduleProp->length);
 
-    return access(absolutePath.c_str(), F_OK) == 0;
+        delete moduleProp;
+
+        moduleProp = nullptr;
+    }
+    if (classesDex != nullptr) {
+        munmap(const_cast<void*>(classesDex->base), classesDex->length);
+
+        delete classesDex;
+
+        classesDex = nullptr;
+    }
+}
+
+Resource *ZygoteLoaderDelegate::getResource(ResourceType type) {
+    Resource **cache;
+    std::string path;
+    switch (type) {
+        case MODULE_PROP: {
+            cache = &moduleProp;
+            path = moduleDirectory + "/module.prop";
+            break;
+        }
+        case CLASSES_DEX: {
+            cache = &classesDex;
+            path = moduleDirectory + "/classes.dex";
+            break;
+        }
+        default: {
+            abort();
+        }
+    }
+
+    if (*cache != nullptr) {
+        return *cache;
+    }
+
+    ScopedFileDescriptor fd = open(path.c_str(), O_RDONLY);
+    fatal_assert(fd >= 0);
+
+    struct stat s{};
+    fatal_assert(fstat(fd, &s) >= 0);
+
+    const void *base = mmap(nullptr, s.st_size, PROT_READ, MAP_SHARED, fd, 0);
+    fatal_assert(base != MAP_FAILED);
+
+    *cache = new Resource(base, s.st_size);
+
+    return *cache;
+}
+
+bool ZygoteLoaderDelegate::shouldEnableForPackage(const std::string &packageName) {
+    std::string path;
+
+    path = moduleDirectory + "/packages/" + packageName;
+    if (access(path.c_str(), F_OK) == 0) {
+        return true;
+    }
+
+    path = dataDirectory + "/packages/" + packageName;
+    if (access(path.c_str(), F_OK) == 0) {
+        return true;
+    }
+
+    return false;
 }
 
 void ZygoteLoaderDelegate::setModuleInfoResolver(ModuleInfoResolver _resolver) {
@@ -43,7 +109,7 @@ void ZygoteLoaderDelegate::setLoaderFactory(LoaderFactory _factory) {
 }
 
 void ZygoteLoaderDelegate::preAppSpecialize(JNIEnv *env, jstring niceName, jint runtimeFlags) {
-    currentProcessName = JNIUtils::resolvePackageName(env, niceName);
+    currentProcessName = ProcessUtils::resolveProcessName(env, niceName);
 
     loader = factory(env, currentProcessName, (runtimeFlags & ZYGOTE_DEBUG_ENABLE_JDWP) != 0);
 }
@@ -55,7 +121,7 @@ void ZygoteLoaderDelegate::postAppSpecialize(JNIEnv *env) {
 void ZygoteLoaderDelegate::preServerSpecialize(JNIEnv *env) {
     currentProcessName = PACKAGE_NAME_SYSTEM_SERVER;
 
-    loader = factory(env, currentProcessName, SystemProperties::isDebuggable());
+    loader = factory(env, currentProcessName, false);
 }
 
 void ZygoteLoaderDelegate::postServerSpecialize(JNIEnv *env) {
@@ -67,7 +133,6 @@ ModuleInfo *ZygoteLoaderDelegate::resolveModuleInfo() {
 }
 
 static int *riruAllowUnload;
-static bool skipNext;
 static ZygoteLoaderDelegate *delegate;
 
 static void enableUnload() {
@@ -94,6 +159,8 @@ static void nativeForkSystemServerPost(JNIEnv *env, jclass cls, jint res) {
     if (res == 0) {
         delegate->postServerSpecialize(env);
 
+        delegate->releaseResourcesCache();
+
         enableUnload();
     }
 }
@@ -107,20 +174,14 @@ static void nativeForkAndSpecializePre(
         jobjectArray *whitelistedDataInfoList, jboolean *bindMountAppDataDirs,
         jboolean *bindMountAppStorageDirs
 ) {
-    skipNext = true;
-
-    if (niceName != nullptr && runtimeFlags != nullptr) {
-        delegate->preAppSpecialize(env, *niceName, *runtimeFlags);
-
-        skipNext = false;
-    }
+    delegate->preAppSpecialize(env, *niceName, *runtimeFlags);
 }
 
 static void nativeForkAndSpecializePost(JNIEnv *env, jclass cls, jint res) {
     if (res == 0) {
-        if (!skipNext) {
-            delegate->postAppSpecialize(env);
-        }
+        delegate->postAppSpecialize(env);
+
+        delegate->releaseResourcesCache();
 
         enableUnload();
     }
@@ -133,19 +194,13 @@ static void nativeSpecializeAppProcessPre(
         jboolean *isTopApp, jobjectArray *pkgDataInfoList, jobjectArray *whitelistedDataInfoList,
         jboolean *bindMountAppDataDirs, jboolean *bindMountAppStorageDirs
 ) {
-    skipNext = true;
-
-    if (niceName != nullptr && runtimeFlags != nullptr) {
-        delegate->preAppSpecialize(env, *niceName, *runtimeFlags);
-
-        skipNext = false;
-    }
+    delegate->preAppSpecialize(env, *niceName, *runtimeFlags);
 }
 
 static void nativeSpecializeAppProcessPost(JNIEnv *env, jclass clazz) {
-    if (!skipNext) {
-        delegate->postAppSpecialize(env);
-    }
+    delegate->postAppSpecialize(env);
+
+    delegate->releaseResourcesCache();
 
     enableUnload();
 }
@@ -164,14 +219,11 @@ RiruVersionedModuleInfo *init(Riru *riru) {
 
     auto _delegate = new ZygoteLoaderDelegate(riru->magiskModulePath);
 
+    _delegate->initialize();
+
     entrypoint(_delegate);
 
     std::unique_ptr<ModuleInfo> info{_delegate->resolveModuleInfo()};
-    if (info == nullptr) {
-        delete _delegate;
-
-        return nullptr;
-    }
 
     delegate = _delegate;
 

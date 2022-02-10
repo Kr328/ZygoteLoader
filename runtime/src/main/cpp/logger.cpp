@@ -7,3 +7,8 @@ void Logger::i(const std::string &msg) {
 void Logger::e(const std::string &msg) {
     __android_log_print(ANDROID_LOG_ERROR, TAG, "%s", msg.c_str());
 }
+
+void Logger::f(const std::string &msg) {
+    __android_log_print(ANDROID_LOG_FATAL, TAG, "%s", msg.c_str());
+    abort();
+}

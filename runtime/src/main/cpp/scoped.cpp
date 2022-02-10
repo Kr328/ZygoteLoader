@@ -2,9 +2,15 @@
 
 #include <unistd.h>
 #include <fcntl.h>
+#include <sys/mman.h>
 
-ScopedFileDescriptor::ScopedFileDescriptor(int _fd) {
-    fd = _fd;
+static void *mmapOrNull(int fd, size_t length, int protect) {
+    void *result = mmap(nullptr, length, protect, MAP_SHARED, fd, 0);
+    return result == MAP_FAILED ? nullptr : result;
+}
+
+ScopedFileDescriptor::ScopedFileDescriptor(int _fd) : fd(_fd) {
+
 }
 
 ScopedFileDescriptor::~ScopedFileDescriptor() {
@@ -15,4 +21,22 @@ ScopedFileDescriptor::~ScopedFileDescriptor() {
 
 ScopedFileDescriptor::operator int() const {
     return fd;
+}
+
+ScopedMemoryMapping::ScopedMemoryMapping(
+        int fd,
+        size_t length,
+        int protect
+) : base(mmapOrNull(fd, length, protect)), length(length) {
+
+}
+
+ScopedMemoryMapping::~ScopedMemoryMapping() {
+    if (base != nullptr) {
+        munmap(const_cast<void*>(base), length);
+    }
+}
+
+ScopedMemoryMapping::operator void *() const {
+    return base;
 }
