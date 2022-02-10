@@ -6,7 +6,11 @@
 
 #define TAG "ZygoteLoader"
 
+#ifdef DEBUG
 #define fatal_assert(expr) if (!(expr)) Logger::f("!(" #expr ")")
+#else
+#define fatal_assert(expr) if (!(expr)) abort()
+#endif
 
 class Logger {
 public:

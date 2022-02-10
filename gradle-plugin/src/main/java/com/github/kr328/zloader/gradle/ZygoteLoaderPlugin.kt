@@ -27,23 +27,29 @@ class ZygoteLoaderPlugin : Plugin<Project> {
                         it.multiDexEnabled = false
                     }
                 }
+            }
+            components.beforeVariants { app ->
                 afterEvaluate {
-                    dependencies.apply {
-                        add(
-                            "riruImplementation",
-                            "com.github.kr328.zloader:runtime-riru:${BuildConfig.VERSION}")
-                        add(
-                            "zygiskImplementation",
-                            "com.github.kr328.zloader:runtime-zygisk:${BuildConfig.VERSION}"
-                        )
+                    when (app.flavorName) {
+                        ZygoteLoaderDecorator.Loader.Riru.flavorName -> {
+                            dependencies.add(
+                                "${app.name}Implementation",
+                                "com.github.kr328.zloader:runtime-riru${if (app.debuggable) "-debug" else ""}:${BuildConfig.VERSION}"
+                            )
+                        }
+                        ZygoteLoaderDecorator.Loader.Zygisk.flavorName -> {
+                            dependencies.add(
+                                "${app.name}Implementation",
+                                "com.github.kr328.zloader:runtime-zygisk${if (app.debuggable) "-debug" else ""}:${BuildConfig.VERSION}"
+                            )
+                        }
                     }
                 }
-            }
-            components.beforeVariants {
-                it.enable = when (it.flavorName) {
+
+                app.enable = when (app.flavorName) {
                     ZygoteLoaderDecorator.Loader.Riru.flavorName -> zygote.riru.isValid
                     ZygoteLoaderDecorator.Loader.Zygisk.flavorName -> zygote.zygisk.isValid
-                    else -> it.enable
+                    else -> app.enable
                 }
             }
             components.onVariants { app ->

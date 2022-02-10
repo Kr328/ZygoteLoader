@@ -70,8 +70,14 @@ afterEvaluate {
             create("runtime-riru", MavenPublication::class) {
                 from(components["riruRelease"])
             }
+            create("runtime-riru-debug", MavenPublication::class) {
+                from(components["riruDebug"])
+            }
             create("runtime-zygisk", MavenPublication::class) {
                 from(components["zygiskRelease"])
+            }
+            create("runtime-zygisk-debug", MavenPublication::class) {
+                from(components["zygiskDebug"])
             }
             withType(MavenPublication::class) {
                 artifact(tasks["sourcesJar"])
