@@ -17,6 +17,12 @@
 #define MIN_API_VERSION 26
 #define TARGET_API_VERSION 26
 
+#ifdef DEBUG
+#define SUPPORT_HIDE 0
+#else
+#define SUPPORT_HIDE 1
+#endif
+
 ZygoteLoaderDelegate::ZygoteLoaderDelegate(const std::string &moduleDir) {
     moduleDirectory = moduleDir;
 }
@@ -230,7 +236,7 @@ RiruVersionedModuleInfo *init(Riru *riru) {
     auto module = new RiruVersionedModuleInfo();
     module->moduleApiVersion = apiVersion;
     module->moduleInfo = RiruModuleInfo{
-            .supportHide = 1,
+            .supportHide = SUPPORT_HIDE,
             .version = info->versionCode,
             .versionName = strdup(info->versionName.c_str()),
             .onModuleLoaded = nullptr,
