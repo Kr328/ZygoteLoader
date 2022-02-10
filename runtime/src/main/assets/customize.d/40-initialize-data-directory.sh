@@ -1,8 +1,8 @@
 # Generate ZygoteLoader data directory
 
-ui_print "- Process data directory"
-
 if [ ! -f "/data/adb/zloader/data-root-directory" ]; then
+  ui_print "- Initialize data directory"
+
   mkdir -p "/data/adb/zloader"
 
   RANDOM_SUFFIX="const"
