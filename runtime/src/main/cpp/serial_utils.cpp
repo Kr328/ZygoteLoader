@@ -12,7 +12,7 @@ ssize_t SerialUtils::readFull(int fd, void *buffer, size_t size) {
 
     while (remain > 0) {
         ssize_t r = read(fd, ptr, remain);
-        if (r < 0) {
+        if (r <= 0) {
             return r;
         }
 
@@ -29,7 +29,7 @@ ssize_t SerialUtils::writeFull(int fd, const void *buffer, size_t size) {
 
     while (remain > 0) {
         ssize_t r = write(fd, ptr, remain);
-        if (r < 0) {
+        if (r <= 0) {
             return r;
         }
 
@@ -140,7 +140,7 @@ ssize_t SerialUtils::readString(int conn, std::string &str) {
 
     std::unique_ptr<char> data{new char[size]};
 
-    if (ssize_t r = readFull(conn, data.get(), sizeof(size)); r < 0) {
+    if (ssize_t r = readFull(conn, data.get(), size); r < 0) {
         return r;
     } else {
         rr += r;
