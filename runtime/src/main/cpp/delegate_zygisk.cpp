@@ -29,6 +29,9 @@ static void handleFileRequest(int client) {
     static int moduleDirectory = -1;
     static int dataDirectory = -1;
 
+    ScopedBlocking blocking{client};
+    fatal_assert(blocking.setBlocking(true));
+
     int command = -1;
     fatal_assert(SerialUtils::readInt(client, command) > 0);
 

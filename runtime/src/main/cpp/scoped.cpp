@@ -2,6 +2,7 @@
 
 #include <unistd.h>
 #include <fcntl.h>
+#include <fcntl.h>
 #include <sys/mman.h>
 
 static void *mmapOrNull(int fd, size_t length, int protect) {
@@ -39,4 +40,24 @@ ScopedMemoryMapping::~ScopedMemoryMapping() {
 
 ScopedMemoryMapping::operator void *() const {
     return base;
+}
+
+ScopedBlocking::ScopedBlocking(int fd) : fd(fd), original(!(fcntl(fd, F_GETFL) & O_NONBLOCK)) {
+
+}
+
+ScopedBlocking::~ScopedBlocking() {
+    setBlocking(original);
+}
+
+bool ScopedBlocking::setBlocking(bool blocking) const {
+    int flags = fcntl(fd, F_GETFL);
+
+    if (blocking) {
+        flags = flags & (~O_NONBLOCK);
+    } else {
+        flags = flags | O_NONBLOCK;
+    }
+
+    return fcntl(fd, F_SETFL, flags) >= 0;
 }

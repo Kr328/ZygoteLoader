@@ -26,3 +26,16 @@ public:
     void * const base;
     size_t const length;
 };
+
+class ScopedBlocking {
+public:
+    ScopedBlocking(int fd);
+    ~ScopedBlocking();
+
+public:
+    bool setBlocking(bool blocking) const;
+
+private:
+    const int fd;
+    const bool original;
+};
