@@ -11,6 +11,7 @@
 #include <jni.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <pthread.h>
 #include <sys/stat.h>
 #include <sys/mman.h>
 #include <linux/ashmem.h>
@@ -22,6 +23,7 @@ enum FileCommand : int {
 };
 
 static void handleFileRequest(int client) {
+    static pthread_mutex_t initializeLock = PTHREAD_MUTEX_INITIALIZER;
     static int moduleProp = -1;
     static int classesDex = -1;
     static int moduleDirectory = -1;
@@ -32,56 +34,62 @@ static void handleFileRequest(int client) {
 
     switch (static_cast<FileCommand>(command)) {
         case INITIALIZE: {
-            fatal_assert(SerialUtils::readFileDescriptor(client, moduleDirectory) > 0);
+            pthread_mutex_lock(&initializeLock);
 
-            ScopedFileDescriptor modulePropFd = openat(moduleDirectory, "module.prop", O_RDONLY);
-            fatal_assert(modulePropFd >= 0);
+            if (moduleDirectory == -1) {
+                fatal_assert(SerialUtils::readFileDescriptor(client, moduleDirectory) > 0);
 
-            ScopedFileDescriptor classesDexFd = openat(moduleDirectory, "classes.dex", O_RDONLY);
-            fatal_assert(classesDexFd >= 0);
+                ScopedFileDescriptor modulePropFd = openat(moduleDirectory, "module.prop", O_RDONLY);
+                fatal_assert(modulePropFd >= 0);
 
-            struct stat modulePropStat{};
-            fatal_assert(fstat(modulePropFd, &modulePropStat) >= 0);
+                ScopedFileDescriptor classesDexFd = openat(moduleDirectory, "classes.dex", O_RDONLY);
+                fatal_assert(classesDexFd >= 0);
 
-            struct stat classesDexStat{};
-            fatal_assert(fstat(classesDexFd, &classesDexStat) >= 0);
+                struct stat modulePropStat{};
+                fatal_assert(fstat(modulePropFd, &modulePropStat) >= 0);
 
-            moduleProp = open(ASHMEM_DEVICE, O_RDWR);
-            fatal_assert(moduleProp >= 0);
-            fatal_assert(ioctl(moduleProp, ASHMEM_SET_SIZE, modulePropStat.st_size) >= 0);
+                struct stat classesDexStat{};
+                fatal_assert(fstat(classesDexFd, &classesDexStat) >= 0);
 
-            classesDex = open(ASHMEM_DEVICE, O_RDWR);
-            fatal_assert(classesDex >= 0);
-            fatal_assert(ioctl(classesDex, ASHMEM_SET_SIZE, classesDexStat.st_size) >= 0);
+                moduleProp = open(ASHMEM_DEVICE, O_RDWR);
+                fatal_assert(moduleProp >= 0);
+                fatal_assert(ioctl(moduleProp, ASHMEM_SET_SIZE, modulePropStat.st_size) >= 0);
 
-            ScopedMemoryMapping modulePropBlock{
-                moduleProp,
-                static_cast<size_t>(modulePropStat.st_size),
-                PROT_READ | PROT_WRITE,
-            };
-            fatal_assert(modulePropBlock != nullptr);
+                classesDex = open(ASHMEM_DEVICE, O_RDWR);
+                fatal_assert(classesDex >= 0);
+                fatal_assert(ioctl(classesDex, ASHMEM_SET_SIZE, classesDexStat.st_size) >= 0);
 
-            ScopedMemoryMapping classesDexBlock{
-                classesDex,
-                static_cast<size_t>(classesDexStat.st_size),
-                PROT_READ | PROT_WRITE,
-            };
-            fatal_assert(classesDexBlock != nullptr);
+                ScopedMemoryMapping modulePropBlock{
+                        moduleProp,
+                        static_cast<size_t>(modulePropStat.st_size),
+                        PROT_READ | PROT_WRITE,
+                };
+                fatal_assert(modulePropBlock != nullptr);
 
-            fatal_assert(SerialUtils::readFull(modulePropFd, modulePropBlock, modulePropBlock.length) > 0);
-            fatal_assert(SerialUtils::readFull(classesDexFd, classesDexBlock, classesDexBlock.length) > 0);
+                ScopedMemoryMapping classesDexBlock{
+                        classesDex,
+                        static_cast<size_t>(classesDexStat.st_size),
+                        PROT_READ | PROT_WRITE,
+                };
+                fatal_assert(classesDexBlock != nullptr);
 
-            fatal_assert(ioctl(moduleProp, ASHMEM_SET_PROT_MASK, PROT_READ) >= 0);
-            fatal_assert(ioctl(classesDex, ASHMEM_SET_PROT_MASK, PROT_READ) >= 0);
+                fatal_assert(SerialUtils::readFull(modulePropFd, modulePropBlock, modulePropBlock.length) > 0);
+                fatal_assert(SerialUtils::readFull(classesDexFd, classesDexBlock, classesDexBlock.length) > 0);
 
-            PropertiesUtils::forEach(modulePropBlock, modulePropBlock.length, [](auto key, auto value) {
-                if (key == "dataDirectory") {
-                    dataDirectory = open(value.c_str(), O_RDONLY | O_DIRECTORY);
-                    fatal_assert(dataDirectory >= 0);
-                }
-            });
+                fatal_assert(ioctl(moduleProp, ASHMEM_SET_PROT_MASK, PROT_READ) >= 0);
+                fatal_assert(ioctl(classesDex, ASHMEM_SET_PROT_MASK, PROT_READ) >= 0);
 
-            fatal_assert(SerialUtils::writeInt(client, 0) > 0);
+                PropertiesUtils::forEach(modulePropBlock, modulePropBlock.length, [](auto key, auto value) {
+                    if (key == "dataDirectory") {
+                        dataDirectory = open(value.c_str(), O_RDONLY | O_DIRECTORY);
+                    }
+                });
+                fatal_assert(dataDirectory >= 0);
+
+                fatal_assert(SerialUtils::writeInt(client, 0) > 0);
+            }
+
+            pthread_mutex_unlock(&initializeLock);
 
             break;
         }
