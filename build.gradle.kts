@@ -18,7 +18,7 @@ allprojects {
 
 subprojects {
     group = "com.github.kr328.zloader"
-    version = "2.0"
+    version = "2.1"
 
     apply(plugin = "maven-publish")
 
