@@ -91,9 +91,9 @@ static void handleFileRequest(int client) {
                     }
                 });
                 fatal_assert(dataDirectory >= 0);
-
-                fatal_assert(SerialUtils::writeInt(client, 0) > 0);
             }
+
+            fatal_assert(SerialUtils::writeInt(client, 0) > 0);
 
             pthread_mutex_unlock(&initializeLock);
 
@@ -102,7 +102,11 @@ static void handleFileRequest(int client) {
         case IS_INITIALIZED: {
             TRACE_SCOPE("Remote: is_initialized");
 
+            pthread_mutex_lock(&initializeLock);
+
             fatal_assert(SerialUtils::writeInt(client, moduleDirectory != -1 ? 1 : 0) > 0);
+
+            pthread_mutex_unlock(&initializeLock);
 
             break;
         }
