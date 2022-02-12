@@ -93,7 +93,7 @@ static void handleFileRequest(int client) {
                 fatal_assert(dataDirectory >= 0);
             }
 
-            fatal_assert(SerialUtils::writeInt(client, 0) > 0);
+            fatal_assert(SerialUtils::writeInt(client, 1) > 0);
 
             pthread_mutex_unlock(&initializeLock);
 
@@ -311,7 +311,7 @@ void ZygoteLoaderModule::initialize() {
 
     int initialized = -1;
     fatal_assert(SerialUtils::readInt(remote, initialized) > 0);
-    fatal_assert(initialized == 0);
+    fatal_assert(initialized == 1);
 }
 
 REGISTER_ZYGISK_MODULE(ZygoteLoaderModule)
