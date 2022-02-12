@@ -70,3 +70,10 @@ zygote {
     1. Run gradle task `<module>:assembleRelease`
        
     2. Pick generated zip from `<module>/build/outputs/magsisk`
+   
+
+## Examples
+
+- [Riru-ClipboardWhitelist](https://github.com/Kr328/Riru-ClipboardWhitelist)
+  
+- [Riru-IFWEnhance](https://github.com/Kr328/Riru-IFWEnhance)
