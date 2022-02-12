@@ -4,7 +4,7 @@ A library for building Java only Zygisk/Riru modules.
 
 ## Getting Start
 
-### 1. Add gradle plugin to project
+1. **Add gradle plugin to project**
 
 ```kotlin
 buildscript {
@@ -14,12 +14,12 @@ buildscript {
     }
     dependencies {
         // ... other dependencies
-        classpath("com.github.kr328.zloader:gradle-plugin:${zygoteLoaderVersion}")
+        classpath("com.github.kr328.zloader:gradle-plugin:$2.0")
     }
 }
 ```
 
-### 2. Add an android application module and create entrypoint
+2. **Add an android application module and create entrypoint**
 
 ```java
 class Entrypoint {
@@ -30,7 +30,7 @@ class Entrypoint {
 }
 ```
 
-### 3. Apply zygote-loader plugin
+3. **Apply zygote-loader plugin**
 
 ```kotlin
 plugins {
@@ -40,7 +40,7 @@ plugins {
 }
 ```
 
-### 4. Configure your module properties
+4. **Configure your module properties**
 
 ```kotlin
 zygote {
@@ -65,7 +65,8 @@ zygote {
 }
 ```
 
-### 5. Build module
+5. **Build module**
 
-1. Run gradle task `<module>:assembleRelease`
-2. Pick generated zip from `<module>/build/outputs/magsisk`
+    1. Run gradle task `<module>:assembleRelease`
+       
+    2. Pick generated zip from `<module>/build/outputs/magsisk`
