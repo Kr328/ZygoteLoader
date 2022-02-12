@@ -2,6 +2,8 @@ package com.github.kr328.zloader.internal;
 
 import android.util.Log;
 
+import androidx.annotation.RestrictTo;
+
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
@@ -9,6 +11,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @SuppressWarnings({"JavaJniMissingFunction", "unused"})
+@RestrictTo(RestrictTo.Scope.LIBRARY)
 public final class Loader {
     private static final String TAG = "ZygoteLoader[Java]";
     private static String dynamicPackagesPath;

@@ -54,6 +54,8 @@ android {
 }
 
 dependencies {
+    compileOnly("androidx.annotation:annotation:1.3.0")
+
     implementation("dev.rikka.ndk:riru:26.0.0")
     implementation("dev.rikka.ndk.thirdparty:cxx:1.2.0")
 }
