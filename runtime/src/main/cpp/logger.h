@@ -15,6 +15,7 @@
 class Logger {
 public:
     static void i(std::string const &msg);
+    static void d(std::string const &msg);
     static void e(std::string const &msg);
     static void f(std::string const &msg);
 };

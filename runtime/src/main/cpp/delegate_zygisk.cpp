@@ -6,6 +6,7 @@
 #include "serial_utils.h"
 #include "properties_utils.h"
 #include "process_utils.h"
+#include "debug.h"
 
 #include <cstdlib>
 #include <jni.h>
@@ -37,6 +38,8 @@ static void handleFileRequest(int client) {
 
     switch (static_cast<FileCommand>(command)) {
         case INITIALIZE: {
+            TRACE_SCOPE("Remote: initialize");
+
             pthread_mutex_lock(&initializeLock);
 
             if (moduleDirectory == -1) {
@@ -97,11 +100,15 @@ static void handleFileRequest(int client) {
             break;
         }
         case IS_INITIALIZED: {
+            TRACE_SCOPE("Remote: is_initialized");
+
             fatal_assert(SerialUtils::writeInt(client, moduleDirectory != -1 ? 1 : 0) > 0);
 
             break;
         }
         case GET_RESOURCE: {
+            TRACE_SCOPE("Remote: get_resource");
+
             int type = -1;
             fatal_assert(SerialUtils::readInt(client, type) > 0);
 
@@ -125,6 +132,8 @@ static void handleFileRequest(int client) {
             break;
         }
         case SHOULD_ENABLE_FOR_PACKAGE: {
+            TRACE_SCOPE("Remote: should_enable_for_package");
+
             std::string path;
             fatal_assert(SerialUtils::readString(client, path) >= 0);
             path = "packages/" + path;
@@ -187,6 +196,8 @@ void ZygoteLoaderModule::postServerSpecialize(const zygisk::ServerSpecializeArgs
 }
 
 Resource *ZygoteLoaderModule::getResource(ResourceType type) {
+    TRACE_SCOPE("Client: get_resource");
+
     Resource **cache;
     switch (type) {
         case MODULE_PROP: {
@@ -230,6 +241,8 @@ Resource *ZygoteLoaderModule::getResource(ResourceType type) {
 }
 
 bool ZygoteLoaderModule::shouldEnableForPackage(const std::string &packageName) {
+    TRACE_SCOPE("Client: should_enable_for_package");
+
     ScopedFileDescriptor remote = api->connectCompanion();
     fatal_assert(remote >= 0);
 
@@ -268,6 +281,8 @@ void ZygoteLoaderModule::releaseResourcesCache() {
 }
 
 bool ZygoteLoaderModule::isInitialized() {
+    TRACE_SCOPE("Client: is_initialized");
+
     ScopedFileDescriptor remote = api->connectCompanion();
     fatal_assert(remote >= 0);
 
@@ -280,6 +295,8 @@ bool ZygoteLoaderModule::isInitialized() {
 }
 
 void ZygoteLoaderModule::initialize() {
+    TRACE_SCOPE("Client: initialize");
+
     ScopedFileDescriptor remote = api->connectCompanion();
 
     ScopedFileDescriptor moduleDir = api->getModuleDir();
