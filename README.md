@@ -14,7 +14,7 @@ buildscript {
     }
     dependencies {
         // ... other dependencies
-        classpath("com.github.kr328.zloader:gradle-plugin:2.1")
+        classpath("com.github.kr328.zloader:gradle-plugin:2.2")
     }
 }
 ```
