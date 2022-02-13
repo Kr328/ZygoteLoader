@@ -1,5 +1,7 @@
 package com.github.kr328.zloader.gradle.tasks
 
+import com.github.kr328.zloader.gradle.util.fromKtx
+import com.github.kr328.zloader.gradle.util.syncKtx
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.tasks.InputDirectory
@@ -8,26 +10,26 @@ import org.gradle.api.tasks.TaskAction
 
 abstract class FlattenTask : DefaultTask() {
     @get:InputDirectory
-    abstract val assetsDir: DirectoryProperty
+    abstract val composedDir: DirectoryProperty
 
     @get:OutputDirectory
-    abstract val outputDir: DirectoryProperty
+    abstract val destinationDir: DirectoryProperty
 
     @TaskAction
     fun doAction() {
-        project.sync { sync ->
-            sync.includeEmptyDirs = false
+        project.syncKtx {
+            includeEmptyDirs = false
 
-            sync.into(outputDir)
+            into(destinationDir)
 
-            sync.from(assetsDir) {
-                it.exclude("**/*.jar")
+            fromKtx(composedDir) {
+                exclude("**/*.jar")
             }
 
-            assetsDir.asFile.get().walk()
+            composedDir.asFile.get().walk()
                 .filter { it.extension == "jar" }
                 .forEach { jar ->
-                    sync.from(project.zipTree(jar))
+                    from(project.zipTree(jar))
                 }
         }
     }

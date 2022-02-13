@@ -12,17 +12,18 @@ abstract class PackagesTask : DefaultTask() {
     abstract val packages: SetProperty<String>
 
     @get:OutputDirectory
-    abstract val outputDir: DirectoryProperty
+    abstract val destinationDir: DirectoryProperty
 
     @TaskAction
     fun doAction() {
-        val file = outputDir.asFile.get().resolve("packages")
+        destinationDir.asFile.get().resolve("packages").apply {
+            deleteRecursively()
 
-        file.deleteRecursively()
-        file.mkdirs()
+            mkdirs()
 
-        packages.get().forEach {
-            file.resolve(it).createNewFile()
+            packages.get().forEach {
+                resolve(it).createNewFile()
+            }
         }
     }
 }

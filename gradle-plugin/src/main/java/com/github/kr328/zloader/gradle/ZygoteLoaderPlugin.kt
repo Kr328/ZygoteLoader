@@ -1,6 +1,7 @@
 package com.github.kr328.zloader.gradle
 
 import com.android.build.api.variant.ApplicationAndroidComponentsExtension
+import com.github.kr328.zloader.gradle.util.*
 import org.gradle.api.GradleException
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -14,46 +15,44 @@ class ZygoteLoaderPlugin : Plugin<Project> {
 
         val zygote = extensions.create("zygote", ZygoteLoaderExtension::class.java)
 
-        extensions.configure(ApplicationAndroidComponentsExtension::class.java) { components ->
-            components.finalizeDsl { app ->
-                app.flavorDimensions += LOADER_FLAVOR_DIMENSION
-                app.productFlavors {
-                    create(ZygoteLoaderDecorator.Loader.Riru.flavorName) {
-                        it.dimension = LOADER_FLAVOR_DIMENSION
-                        it.multiDexEnabled = false
+        extensions.configureKtx(ApplicationAndroidComponentsExtension::class) {
+            finalizeDslKtx {
+                flavorDimensions += LOADER_FLAVOR_DIMENSION
+                productFlavors {
+                    createKtx(ZygoteLoaderDecorator.Loader.Riru.flavorName) {
+                        dimension = LOADER_FLAVOR_DIMENSION
+                        multiDexEnabled = false
                     }
-                    create(ZygoteLoaderDecorator.Loader.Zygisk.flavorName) {
-                        it.dimension = LOADER_FLAVOR_DIMENSION
-                        it.multiDexEnabled = false
+                    createKtx(ZygoteLoaderDecorator.Loader.Zygisk.flavorName) {
+                        dimension = LOADER_FLAVOR_DIMENSION
+                        multiDexEnabled = false
                     }
                 }
             }
-            components.beforeVariants { app ->
+            beforeVariantsKtx {
+                val flavorName = productFlavors.single {
+                    it.first == LOADER_FLAVOR_DIMENSION
+                }.second
+
                 afterEvaluate {
-                    when (app.flavorName) {
+                    when (flavorName) {
                         ZygoteLoaderDecorator.Loader.Riru.flavorName -> {
                             dependencies.add(
-                                "${app.name}Implementation",
-                                "com.github.kr328.zloader:runtime-riru${if (app.debuggable) "-debug" else ""}:${BuildConfig.VERSION}"
+                                "${name}Implementation",
+                                "com.github.kr328.zloader:runtime-riru${if (debuggable) "-debug" else ""}:${BuildConfig.VERSION}"
                             )
                         }
                         ZygoteLoaderDecorator.Loader.Zygisk.flavorName -> {
                             dependencies.add(
-                                "${app.name}Implementation",
-                                "com.github.kr328.zloader:runtime-zygisk${if (app.debuggable) "-debug" else ""}:${BuildConfig.VERSION}"
+                                "${name}Implementation",
+                                "com.github.kr328.zloader:runtime-zygisk${if (debuggable) "-debug" else ""}:${BuildConfig.VERSION}"
                             )
                         }
                     }
                 }
-
-                app.enable = when (app.flavorName) {
-                    ZygoteLoaderDecorator.Loader.Riru.flavorName -> zygote.riru.isValid
-                    ZygoteLoaderDecorator.Loader.Zygisk.flavorName -> zygote.zygisk.isValid
-                    else -> app.enable
-                }
             }
-            components.onVariants { app ->
-                val loader = when (app.flavorName) {
+            onVariantsKtx {
+                val loader = when (flavorName) {
                     ZygoteLoaderDecorator.Loader.Riru.flavorName ->
                         ZygoteLoaderDecorator.Loader.Riru
                     ZygoteLoaderDecorator.Loader.Zygisk.flavorName ->
@@ -61,13 +60,15 @@ class ZygoteLoaderPlugin : Plugin<Project> {
                     else -> null
                 }
 
-                if (loader != null) {
-                    ZygoteLoaderDecorator.decorateVariant(
-                        loader,
-                        target,
-                        app,
-                        zygote
-                    )
+                afterEvaluate {
+                    if (loader != null) {
+                        ZygoteLoaderDecorator.decorateVariant(
+                            loader,
+                            target,
+                            this,
+                            zygote
+                        )
+                    }
                 }
             }
         }
