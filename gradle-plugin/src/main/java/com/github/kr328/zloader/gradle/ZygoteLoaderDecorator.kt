@@ -3,13 +3,11 @@ package com.github.kr328.zloader.gradle
 import com.android.build.api.variant.ApplicationVariant
 import com.android.build.gradle.internal.scope.InternalArtifactType
 import com.android.build.gradle.internal.scope.InternalMultipleArtifactType
-import com.github.kr328.zloader.gradle.tasks.CustomizeTask
-import com.github.kr328.zloader.gradle.tasks.FlattenTask
-import com.github.kr328.zloader.gradle.tasks.PackagesTask
-import com.github.kr328.zloader.gradle.tasks.PropertiesTask
+import com.github.kr328.zloader.gradle.tasks.*
 import com.github.kr328.zloader.gradle.util.resolveImpl
 import com.github.kr328.zloader.gradle.util.toCapitalized
 import org.gradle.api.Project
+import org.gradle.api.tasks.Sync
 import org.gradle.api.tasks.bundling.Zip
 import org.gradle.api.tasks.bundling.ZipEntryCompression
 
@@ -68,39 +66,18 @@ object ZygoteLoaderDecorator {
                 it.assetsDir.set(artifacts.get(InternalArtifactType.COMPRESSED_ASSETS))
             }
 
-            val generateCustomize = tasks.register(
-                "generateCustomize$capitalized",
-                CustomizeTask::class.java,
-            ) {
-                it.dependsOn(flattenAssets)
-                it.outputDir.set(buildDir.resolve("generated/customize_sh/${variant.name}"))
-                it.customizeFiles.set(flattenAssets.get().outputDir.get().asFile.resolve("assets/customize.d"))
-            }
+            val mergeMagisk = tasks.register(
+                "mergeMagisk$capitalized",
+                Sync::class.java
+            ) { sync ->
+                val nativeLibs = artifacts.get(InternalArtifactType.MERGED_NATIVE_LIBS)
+                val dex = artifacts.getAll(InternalMultipleArtifactType.DEX).map { it.single() }
 
-            val nativeLibs = artifacts.get(InternalArtifactType.MERGED_NATIVE_LIBS)
-            val dex = artifacts.getAll(InternalMultipleArtifactType.DEX).map { it.single() }
+                sync.dependsOn(flattenAssets, generatePackages, generateProperties, packing)
 
-            val packagingMagisk = tasks.register(
-                "packageMagisk$capitalized",
-                Zip::class.java
-            ) { zip ->
-                zip.dependsOn(generateProperties, generatePackages, generateCustomize, flattenAssets)
+                sync.destinationDir = buildDir.resolve("intermediates/merged_magisk/${variant.name}")
 
-                val outputDir = buildDir.resolve("outputs/magisk")
-                    .resolve("${variant.flavorName}")
-                    .resolve("${variant.buildType}")
-                val archiveName = when (loader) {
-                    Loader.Riru -> extension.riru["archiveName"]
-                    Loader.Zygisk -> extension.zygisk["archiveName"]
-                } ?: project.name
-
-                zip.destinationDirectory.set(outputDir)
-                zip.archiveBaseName.set(archiveName)
-                zip.includeEmptyDirs = false
-                zip.entryCompression = ZipEntryCompression.DEFLATED
-                zip.isPreserveFileTimestamps = false
-
-                zip.from(nativeLibs.map { it.asFile.resolve("lib") }) { spec ->
+                sync.from(nativeLibs.map { it.asFile.resolve("lib") }) { spec ->
                     when (loader) {
                         Loader.Riru -> {
                             spec.include("**/libriru_loader.so")
@@ -118,13 +95,59 @@ object ZygoteLoaderDecorator {
                         }
                     }
                 }
-                zip.from(dex) {
+                sync.from(dex) {
                     it.include("classes.dex")
                 }
-                zip.from(flattenAssets.get().outputDir.get().asFile.resolve("assets"))
+                sync.from(flattenAssets.get().outputDir.get().asFile.resolve("assets"))
+                sync.from(generatePackages.get().outputDir)
+                sync.from(generateProperties.get().outputDir)
+            }
+
+            val generateChecksum = tasks.register(
+                "generateChecksum$capitalized",
+                ChecksumTask::class.java
+            ) {
+                it.dependsOn(mergeMagisk)
+
+                it.inputDir.set(mergeMagisk.get().destinationDir)
+                it.outputDir.set(buildDir.resolve("generated/checksum/${variant.name}"))
+            }
+
+            val generateCustomize = tasks.register(
+                "generateCustomize$capitalized",
+                CustomizeTask::class.java,
+            ) {
+                it.dependsOn(mergeMagisk, generateChecksum)
+
+                it.outputDir.set(buildDir.resolve("generated/customize_sh/${variant.name}"))
+
+                it.customizeFiles.set(mergeMagisk.get().destinationDir.resolve("customize.d"))
+                it.checksumFiles.set(generateChecksum.get().outputDir.get().asFile.resolve("customize.d"))
+            }
+
+            val packagingMagisk = tasks.register(
+                "packageMagisk$capitalized",
+                Zip::class.java
+            ) { zip ->
+                zip.dependsOn(mergeMagisk, generateCustomize)
+
+                val outputDir = buildDir.resolve("outputs/magisk")
+                    .resolve("${variant.flavorName}")
+                    .resolve("${variant.buildType}")
+                val archiveName = when (loader) {
+                    Loader.Riru -> extension.riru["archiveName"]
+                    Loader.Zygisk -> extension.zygisk["archiveName"]
+                } ?: project.name
+
+                zip.destinationDirectory.set(outputDir)
+                zip.archiveBaseName.set(archiveName)
+                zip.includeEmptyDirs = false
+                zip.entryCompression = ZipEntryCompression.DEFLATED
+                zip.isPreserveFileTimestamps = false
+
+                zip.from(mergeMagisk.get().destinationDir)
                 zip.from(generateCustomize.get().outputDir)
-                zip.from(generatePackages.get().outputDir)
-                zip.from(generateProperties.get().outputDir)
+                zip.from(generateChecksum.get().outputDir)
             }
 
             tasks.getByName("assemble$capitalized").dependsOn(packagingMagisk)
