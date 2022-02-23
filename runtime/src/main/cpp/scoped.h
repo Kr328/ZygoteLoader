@@ -14,19 +14,6 @@ public:
     int const fd;
 };
 
-class ScopedMemoryMapping {
-public:
-    ScopedMemoryMapping(int fd, size_t length, int protect);
-    ~ScopedMemoryMapping();
-
-public:
-    operator void *() const;
-
-public:
-    void * const base;
-    size_t const length;
-};
-
 class ScopedBlocking {
 public:
     ScopedBlocking(int fd);

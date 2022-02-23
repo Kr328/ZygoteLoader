@@ -24,24 +24,6 @@ ScopedFileDescriptor::operator int() const {
     return fd;
 }
 
-ScopedMemoryMapping::ScopedMemoryMapping(
-        int fd,
-        size_t length,
-        int protect
-) : base(mmapOrNull(fd, length, protect)), length(length) {
-
-}
-
-ScopedMemoryMapping::~ScopedMemoryMapping() {
-    if (base != nullptr) {
-        munmap(const_cast<void*>(base), length);
-    }
-}
-
-ScopedMemoryMapping::operator void *() const {
-    return base;
-}
-
 ScopedBlocking::ScopedBlocking(int fd) : fd(fd), original(!(fcntl(fd, F_GETFL) & O_NONBLOCK)) {
 
 }
