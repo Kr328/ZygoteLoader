@@ -17,8 +17,6 @@
 #include <sys/mman.h>
 #include <linux/ashmem.h>
 
-#define ASHMEM_DEVICE "/dev/ashmem"
-
 enum FileCommand : int {
     INITIALIZE, IS_INITIALIZED, GET_RESOURCE, SHOULD_ENABLE_FOR_PACKAGE
 };
@@ -45,52 +43,38 @@ static void handleFileRequest(int client) {
             if (moduleDirectory == -1) {
                 fatal_assert(SerialUtils::readFileDescriptor(client, moduleDirectory) > 0);
 
-                ScopedFileDescriptor modulePropFd = openat(moduleDirectory, "module.prop", O_RDONLY);
-                fatal_assert(modulePropFd >= 0);
-
-                ScopedFileDescriptor classesDexFd = openat(moduleDirectory, "classes.dex", O_RDONLY);
-                fatal_assert(classesDexFd >= 0);
-
-                struct stat modulePropStat{};
-                fatal_assert(fstat(modulePropFd, &modulePropStat) >= 0);
-
-                struct stat classesDexStat{};
-                fatal_assert(fstat(classesDexFd, &classesDexStat) >= 0);
-
-                moduleProp = open(ASHMEM_DEVICE, O_RDWR);
+                moduleProp = openat(moduleDirectory, "module.prop", O_RDONLY);
                 fatal_assert(moduleProp >= 0);
-                fatal_assert(ioctl(moduleProp, ASHMEM_SET_SIZE, modulePropStat.st_size) >= 0);
 
-                classesDex = open(ASHMEM_DEVICE, O_RDWR);
+                classesDex = openat(moduleDirectory, "classes.dex", O_RDONLY);
                 fatal_assert(classesDex >= 0);
-                fatal_assert(ioctl(classesDex, ASHMEM_SET_SIZE, classesDexStat.st_size) >= 0);
 
-                ScopedMemoryMapping modulePropBlock{
-                        moduleProp,
-                        static_cast<size_t>(modulePropStat.st_size),
-                        PROT_READ | PROT_WRITE,
-                };
-                fatal_assert(modulePropBlock != nullptr);
+                /* dataDirectory */ {
+                    struct stat stat{};
+                    fatal_assert(fstat(moduleProp, &stat) >= 0);
 
-                ScopedMemoryMapping classesDexBlock{
-                        classesDex,
-                        static_cast<size_t>(classesDexStat.st_size),
-                        PROT_READ | PROT_WRITE,
-                };
-                fatal_assert(classesDexBlock != nullptr);
+                    void *block = mmap(
+                            nullptr,
+                            stat.st_size,
+                            PROT_READ,
+                            MAP_PRIVATE,
+                            moduleProp,
+                            0
+                    );
+                    fatal_assert(block != MAP_FAILED);
 
-                fatal_assert(SerialUtils::readFull(modulePropFd, modulePropBlock, modulePropBlock.length) > 0);
-                fatal_assert(SerialUtils::readFull(classesDexFd, classesDexBlock, classesDexBlock.length) > 0);
+                    PropertiesUtils::forEach(block, stat.st_size, [](auto key, auto value) {
+                        if (key == "dataDirectory") {
+                            if (dataDirectory >= 0) {
+                                close(dataDirectory);
+                            }
+                            dataDirectory = open(value.c_str(), O_RDONLY | O_DIRECTORY);
+                        }
+                    });
+                    fatal_assert(dataDirectory >= 0);
 
-                fatal_assert(ioctl(moduleProp, ASHMEM_SET_PROT_MASK, PROT_READ) >= 0);
-                fatal_assert(ioctl(classesDex, ASHMEM_SET_PROT_MASK, PROT_READ) >= 0);
-
-                PropertiesUtils::forEach(modulePropBlock, modulePropBlock.length, [](auto key, auto value) {
-                    if (key == "dataDirectory") {
-                        dataDirectory = open(value.c_str(), O_RDONLY | O_DIRECTORY);
-                    }
-                });
-                fatal_assert(dataDirectory >= 0);
+                    munmap(block, stat.st_size);
+                }
             }
 
             fatal_assert(SerialUtils::writeInt(client, 1) > 0);
@@ -184,7 +168,7 @@ void ZygoteLoaderModule::preAppSpecialize(zygisk::AppSpecializeArgs *args) {
 void ZygoteLoaderModule::postAppSpecialize(const zygisk::AppSpecializeArgs *args) {
     loader(env);
 
-    releaseResourcesCache();
+    purgeResourceCache();
 }
 
 void ZygoteLoaderModule::preServerSpecialize(zygisk::ServerSpecializeArgs *args) {
@@ -196,7 +180,7 @@ void ZygoteLoaderModule::preServerSpecialize(zygisk::ServerSpecializeArgs *args)
 void ZygoteLoaderModule::postServerSpecialize(const zygisk::ServerSpecializeArgs *args) {
     loader(env);
 
-    releaseResourcesCache();
+    purgeResourceCache();
 }
 
 Resource *ZygoteLoaderModule::getResource(ResourceType type) {
@@ -216,7 +200,6 @@ Resource *ZygoteLoaderModule::getResource(ResourceType type) {
             abort();
         }
     }
-
     if (*cache != nullptr) {
         return *cache;
     }
@@ -233,13 +216,13 @@ Resource *ZygoteLoaderModule::getResource(ResourceType type) {
 
     ScopedFileDescriptor fd = _fd;
 
-    size_t length = ioctl(fd, ASHMEM_GET_SIZE);
-    fatal_assert(length >= 0);
+    struct stat stat{};
+    fatal_assert(fstat(fd, &stat) >= 0);
 
-    const void *base = mmap(nullptr, length, PROT_READ, MAP_SHARED, fd, 0);
+    const void *base = mmap(nullptr, stat.st_size, PROT_READ, MAP_SHARED, fd, 0);
     fatal_assert(base != MAP_FAILED);
 
-    *cache = new Resource(base, length);
+    *cache = new Resource(base, stat.st_size);
 
     return *cache;
 }
@@ -267,21 +250,19 @@ void ZygoteLoaderModule::setLoaderFactory(LoaderFactory _factory) {
     factory = _factory;
 }
 
-void ZygoteLoaderModule::releaseResourcesCache() {
-    if (moduleProp != nullptr) {
-        munmap(const_cast<void*>(moduleProp->base), moduleProp->length);
+void ZygoteLoaderModule::purgeResourceCache() {
+    auto release = [](Resource **resource) {
+        if (*resource != nullptr) {
+            munmap(const_cast<void*>((*resource)->base), (*resource)->length);
 
-        delete moduleProp;
+            delete *resource;
 
-        moduleProp = nullptr;
-    }
-    if (classesDex != nullptr) {
-        munmap(const_cast<void*>(classesDex->base), classesDex->length);
+            *resource = nullptr;
+        }
+    };
 
-        delete classesDex;
-
-        classesDex = nullptr;
-    }
+    release(&moduleProp);
+    release(&classesDex);
 }
 
 bool ZygoteLoaderModule::isInitialized() {

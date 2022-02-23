@@ -29,28 +29,26 @@ ZygoteLoaderDelegate::ZygoteLoaderDelegate(const std::string &moduleDir) {
 
 void ZygoteLoaderDelegate::initialize() {
     Resource *modulePropRes = getResource(MODULE_PROP);
-    PropertiesUtils::forEach(modulePropRes->base, modulePropRes->length, [this](auto key, auto value) {
+    PropertiesUtils::forEach(modulePropRes, modulePropRes->length, [this](auto key, auto value) {
         if (key == "dataDirectory") {
             dataDirectory = value;
         }
     });
 }
 
-void ZygoteLoaderDelegate::releaseResourcesCache() {
-    if (moduleProp != nullptr) {
-        munmap(const_cast<void*>(moduleProp->base), moduleProp->length);
+void ZygoteLoaderDelegate::purgeResourceCache() {
+    auto release = [](Resource **resource) {
+        if (*resource != nullptr) {
+            munmap(const_cast<void*>((*resource)->base), (*resource)->length);
 
-        delete moduleProp;
+            delete *resource;
 
-        moduleProp = nullptr;
-    }
-    if (classesDex != nullptr) {
-        munmap(const_cast<void*>(classesDex->base), classesDex->length);
+            *resource = nullptr;
+        }
+    };
 
-        delete classesDex;
-
-        classesDex = nullptr;
-    }
+    release(&moduleProp);
+    release(&classesDex);
 }
 
 Resource *ZygoteLoaderDelegate::getResource(ResourceType type) {
@@ -165,7 +163,7 @@ static void nativeForkSystemServerPost(JNIEnv *env, jclass cls, jint res) {
     if (res == 0) {
         delegate->postServerSpecialize(env);
 
-        delegate->releaseResourcesCache();
+        delegate->purgeResourceCache();
 
         enableUnload();
     }
@@ -187,7 +185,7 @@ static void nativeForkAndSpecializePost(JNIEnv *env, jclass cls, jint res) {
     if (res == 0) {
         delegate->postAppSpecialize(env);
 
-        delegate->releaseResourcesCache();
+        delegate->purgeResourceCache();
 
         enableUnload();
     }
@@ -206,7 +204,7 @@ static void nativeSpecializeAppProcessPre(
 static void nativeSpecializeAppProcessPost(JNIEnv *env, jclass clazz) {
     delegate->postAppSpecialize(env);
 
-    delegate->releaseResourcesCache();
+    delegate->purgeResourceCache();
 
     enableUnload();
 }

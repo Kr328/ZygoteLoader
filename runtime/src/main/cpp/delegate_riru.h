@@ -10,7 +10,7 @@ public:
 
 public:
     void initialize();
-    void releaseResourcesCache();
+    void purgeResourceCache();
 
 public:
     void preAppSpecialize(JNIEnv *env, jstring niceName, jint runtimeFlags);

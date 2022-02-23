@@ -24,7 +24,7 @@ public:
 private:
     bool isInitialized();
     void initialize();
-    void releaseResourcesCache();
+    void purgeResourceCache();
 
 private:
     zygisk::Api *api = nullptr;
