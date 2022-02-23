@@ -53,6 +53,7 @@ android {
     }
     publishing {
         multipleVariants("all") {
+            withSourcesJar()
             includeBuildTypeValues("debug", "release")
             includeFlavorDimensionAndValues("loader", "riru", "zygisk")
         }
@@ -66,20 +67,11 @@ dependencies {
     implementation("dev.rikka.ndk.thirdparty:cxx:1.2.0")
 }
 
-task("sourcesJar", Jar::class) {
-    archiveClassifier.set("sources")
-
-    from(android.sourceSets["main"].java.srcDirs)
-}
-
 afterEvaluate {
     publishing {
         publications {
             create("runtime", MavenPublication::class) {
                 from(components["all"])
-            }
-            withType(MavenPublication::class) {
-                artifact(tasks["sourcesJar"])
             }
         }
     }
