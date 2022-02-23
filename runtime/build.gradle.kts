@@ -22,9 +22,9 @@ android {
     }
 
     productFlavors {
-        flavorDimensions.add("loader")
+        setFlavorDimensions(mutableListOf("loader"))
         create("riru") {
-            dimension = flavorDimensions[0]
+            dimension = "loader"
 
             externalNativeBuild {
                 cmake {
@@ -33,7 +33,7 @@ android {
             }
         }
         create("zygisk") {
-            dimension = flavorDimensions[0]
+            dimension = "loader"
 
             externalNativeBuild {
                 cmake {
@@ -50,6 +50,12 @@ android {
     }
     buildFeatures {
         prefab = true
+    }
+    publishing {
+        multipleVariants("all") {
+            includeBuildTypeValues("debug", "release")
+            includeFlavorDimensionAndValues("loader", "riru", "zygisk")
+        }
     }
 }
 
@@ -69,17 +75,8 @@ task("sourcesJar", Jar::class) {
 afterEvaluate {
     publishing {
         publications {
-            create("runtime-riru", MavenPublication::class) {
-                from(components["riruRelease"])
-            }
-            create("runtime-riru-debug", MavenPublication::class) {
-                from(components["riruDebug"])
-            }
-            create("runtime-zygisk", MavenPublication::class) {
-                from(components["zygiskRelease"])
-            }
-            create("runtime-zygisk-debug", MavenPublication::class) {
-                from(components["zygiskDebug"])
+            create("runtime", MavenPublication::class) {
+                from(components["all"])
             }
             withType(MavenPublication::class) {
                 artifact(tasks["sourcesJar"])

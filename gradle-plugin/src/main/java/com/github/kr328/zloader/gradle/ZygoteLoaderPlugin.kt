@@ -15,6 +15,11 @@ class ZygoteLoaderPlugin : Plugin<Project> {
 
         val zygote = extensions.create("zygote", ZygoteLoaderExtension::class.java)
 
+        dependencies.add(
+            "implementation",
+            "com.github.kr328.zloader:runtime:${BuildConfig.VERSION}"
+        )
+
         extensions.configureKtx(ApplicationAndroidComponentsExtension::class) {
             finalizeDslKtx {
                 flavorDimensions += LOADER_FLAVOR_DIMENSION
@@ -26,28 +31,6 @@ class ZygoteLoaderPlugin : Plugin<Project> {
                     createKtx(ZygoteLoaderDecorator.Loader.Zygisk.flavorName) {
                         dimension = LOADER_FLAVOR_DIMENSION
                         multiDexEnabled = false
-                    }
-                }
-            }
-            beforeVariantsKtx {
-                val flavorName = productFlavors.single {
-                    it.first == LOADER_FLAVOR_DIMENSION
-                }.second
-
-                afterEvaluate {
-                    when (flavorName) {
-                        ZygoteLoaderDecorator.Loader.Riru.flavorName -> {
-                            dependencies.add(
-                                "${name}Implementation",
-                                "com.github.kr328.zloader:runtime-riru${if (debuggable) "-debug" else ""}:${BuildConfig.VERSION}"
-                            )
-                        }
-                        ZygoteLoaderDecorator.Loader.Zygisk.flavorName -> {
-                            dependencies.add(
-                                "${name}Implementation",
-                                "com.github.kr328.zloader:runtime-zygisk${if (debuggable) "-debug" else ""}:${BuildConfig.VERSION}"
-                            )
-                        }
                     }
                 }
             }
