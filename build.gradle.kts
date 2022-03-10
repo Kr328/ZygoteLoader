@@ -1,28 +1,15 @@
-// Top-level build file where you can add configuration options common to all sub-projects/modules.
-buildscript {
-    repositories {
-        google()
-        mavenCentral()
-    }
-    dependencies {
-        classpath("com.android.tools.build:gradle:7.1.1")
-    }
-}
-
-allprojects {
-    repositories {
-        google()
-        mavenCentral()
-    }
-}
-
 subprojects {
-    group = "com.github.kr328.zloader"
-    version = "2.3"
+    group = "com.github.kr328.gradle.zygote"
+    version = "2.4"
+
+    repositories {
+        google()
+        mavenCentral()
+    }
 
     apply(plugin = "maven-publish")
 
-    extensions.configure(PublishingExtension::class.java) {
+    extensions.configure<PublishingExtension> {
         repositories {
             mavenLocal()
 
@@ -33,34 +20,30 @@ subprojects {
             }
         }
         publications {
-            afterEvaluate {
-                afterEvaluate {
-                    withType(MavenPublication::class) {
-                        pom {
-                            name.set("ZygoteLoader")
-                            description.set("ZygoteLoader")
-                            url.set("https://github.com/Kr328/ZygoteLoader")
-                            licenses {
-                                license {
-                                    name.set("MIT License")
-                                }
-                            }
-                            developers {
-                                developer {
-                                    name.set("Kr328")
-                                }
-                            }
-                            scm {
-                                connection.set("scm:git:https://github.com/Kr328/ZygoteLoader.git")
-                                url.set("https://github.com/Kr328/ZygoteLoader.git")
-                            }
+            create(project.name, MavenPublication::class) {
+                pom {
+                    name.set("ZygoteLoader")
+                    description.set("ZygoteLoader")
+                    url.set("https://github.com/Kr328/ZygoteLoader")
+                    licenses {
+                        license {
+                            name.set("MIT License")
                         }
-
-                        groupId = project.group.toString()
-                        version = project.version.toString()
-                        artifactId = name
+                    }
+                    developers {
+                        developer {
+                            name.set("Kr328")
+                        }
+                    }
+                    scm {
+                        connection.set("scm:git:https://github.com/Kr328/ZygoteLoader.git")
+                        url.set("https://github.com/Kr328/ZygoteLoader.git")
                     }
                 }
+
+                groupId = project.group.toString()
+                version = project.version.toString()
+                artifactId = project.name
             }
         }
     }

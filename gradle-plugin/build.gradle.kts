@@ -1,8 +1,9 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    kotlin("jvm") version "1.6.10"
+    alias(deps.plugins.kotlin.jvm)
     `java-gradle-plugin`
+    java
 }
 
 val dynamicSources = buildDir.resolve("generated/dynamic")
@@ -14,7 +15,7 @@ java {
 
 dependencies {
     compileOnly(gradleApi())
-    compileOnly("com.android.tools.build:gradle:7.1.0")
+    compileOnly(deps.android.gradle)
 }
 
 sourceSets {
@@ -25,9 +26,9 @@ sourceSets {
 
 gradlePlugin {
     plugins {
-        create("zygote-loader") {
-            id = "zygote-loader"
-            implementationClass = "com.github.kr328.zloader.gradle.ZygoteLoaderPlugin"
+        create("zygote") {
+            id = "com.github.kr328.gradle.zygote"
+            implementationClass = "com.github.kr328.gradle.zygote.ZygoteLoaderPlugin"
         }
     }
 }
@@ -45,13 +46,13 @@ task("generateDynamicSources") {
     tasks.withType(KotlinCompile::class.java).forEach { it.dependsOn(this) }
 
     doFirst {
-        val buildConfig = dynamicSources.resolve("com/github/kr328/zloader/gradle/BuildConfig.java")
+        val buildConfig = dynamicSources.resolve("com/github/kr328/gradle/zygote/BuildConfig.java")
 
         buildConfig.parentFile.mkdirs()
 
         buildConfig.writeText(
             """
-            package com.github.kr328.zloader.gradle;
+            package com.github.kr328.gradle.zygote;
             
             public final class BuildConfig {
                 public static final String VERSION = "$version";
@@ -61,16 +62,16 @@ task("generateDynamicSources") {
     }
 }
 
-afterEvaluate {
-    tasks["sourcesJar"].dependsOn(tasks["generateDynamicSources"])
+publishing {
+    publications {
+        named(project.name, MavenPublication::class) {
+            from(components["java"])
 
-    publishing {
-        publications {
-            create("gradle-plugin", MavenPublication::class) {
-                from(components["java"])
-
-                artifact(tasks["sourcesJar"])
-            }
+            artifact(tasks["sourcesJar"])
         }
     }
+}
+
+afterEvaluate {
+    tasks["sourcesJar"].dependsOn(tasks["generateDynamicSources"])
 }

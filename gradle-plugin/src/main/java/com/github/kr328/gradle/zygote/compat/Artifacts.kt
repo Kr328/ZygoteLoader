@@ -1,4 +1,4 @@
-package com.github.kr328.zloader.gradle.compat
+package com.github.kr328.gradle.zygote.compat
 
 import com.android.build.api.artifact.Artifacts
 import com.android.build.api.artifact.impl.ArtifactsImpl

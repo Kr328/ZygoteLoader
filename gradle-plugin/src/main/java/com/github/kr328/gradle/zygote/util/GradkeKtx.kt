@@ -1,4 +1,4 @@
-package com.github.kr328.zloader.gradle.util
+package com.github.kr328.gradle.zygote.util
 
 import com.android.build.api.dsl.CommonExtension
 import com.android.build.api.variant.AndroidComponentsExtension

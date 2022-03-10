@@ -1,4 +1,4 @@
-package com.github.kr328.zloader.gradle
+package com.github.kr328.gradle.zygote
 
 import org.gradle.api.Action
 

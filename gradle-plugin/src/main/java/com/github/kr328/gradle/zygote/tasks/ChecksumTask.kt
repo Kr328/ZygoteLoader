@@ -1,6 +1,6 @@
-package com.github.kr328.zloader.gradle.tasks
+package com.github.kr328.gradle.zygote.tasks
 
-import com.github.kr328.zloader.gradle.util.digestHexString
+import com.github.kr328.gradle.zygote.util.digestHexString
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.tasks.InputDirectory

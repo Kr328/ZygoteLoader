@@ -1,7 +1,7 @@
-package com.github.kr328.zloader.gradle.tasks
+package com.github.kr328.gradle.zygote.tasks
 
-import com.github.kr328.zloader.gradle.util.fromKtx
-import com.github.kr328.zloader.gradle.util.syncKtx
+import com.github.kr328.gradle.zygote.util.fromKtx
+import com.github.kr328.gradle.zygote.util.syncKtx
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.tasks.InputDirectory

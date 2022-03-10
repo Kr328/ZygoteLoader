@@ -1,11 +1,11 @@
-package com.github.kr328.zloader.gradle
+package com.github.kr328.gradle.zygote
 
 import com.android.build.api.variant.ApplicationVariant
 import com.android.build.gradle.internal.scope.InternalArtifactType
 import com.android.build.gradle.internal.scope.InternalMultipleArtifactType
-import com.github.kr328.zloader.gradle.compat.resolveImpl
-import com.github.kr328.zloader.gradle.tasks.*
-import com.github.kr328.zloader.gradle.util.*
+import com.github.kr328.gradle.zygote.compat.resolveImpl
+import com.github.kr328.gradle.zygote.tasks.*
+import com.github.kr328.gradle.zygote.util.*
 import org.gradle.api.Project
 import org.gradle.api.tasks.Sync
 import org.gradle.api.tasks.bundling.Zip

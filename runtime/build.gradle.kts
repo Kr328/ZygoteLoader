@@ -1,5 +1,5 @@
 plugins {
-    id("com.android.library")
+    alias(deps.plugins.android.library)
     `maven-publish`
 }
 
@@ -61,16 +61,19 @@ android {
 }
 
 dependencies {
-    compileOnly("androidx.annotation:annotation:1.3.0")
+    val riruImplementation by configurations
 
-    implementation("dev.rikka.ndk:riru:26.0.0")
-    implementation("dev.rikka.ndk.thirdparty:cxx:1.2.0")
+    compileOnly(deps.androidx.annotation)
+
+    implementation(deps.cxx.runtime)
+
+    riruImplementation(deps.riru.runtime)
 }
 
 afterEvaluate {
     publishing {
         publications {
-            create("runtime", MavenPublication::class) {
+            named(project.name, MavenPublication::class) {
                 from(components["all"])
             }
         }

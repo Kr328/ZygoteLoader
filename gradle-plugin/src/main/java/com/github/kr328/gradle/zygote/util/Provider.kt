@@ -1,4 +1,4 @@
-package com.github.kr328.zloader.gradle.util
+package com.github.kr328.gradle.zygote.util
 
 import org.gradle.api.file.Directory
 import org.gradle.api.provider.Provider

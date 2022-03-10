@@ -1,7 +1,10 @@
-package com.github.kr328.zloader.gradle
+package com.github.kr328.gradle.zygote
 
 import com.android.build.api.variant.ApplicationAndroidComponentsExtension
-import com.github.kr328.zloader.gradle.util.*
+import com.github.kr328.gradle.zygote.util.configureKtx
+import com.github.kr328.gradle.zygote.util.createKtx
+import com.github.kr328.gradle.zygote.util.finalizeDslKtx
+import com.github.kr328.gradle.zygote.util.onVariantsKtx
 import org.gradle.api.GradleException
 import org.gradle.api.Plugin
 import org.gradle.api.Project
