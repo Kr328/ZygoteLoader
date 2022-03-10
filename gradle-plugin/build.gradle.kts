@@ -40,7 +40,9 @@ task("sourcesJar", Jar::class) {
 }
 
 task("generateDynamicSources") {
-    inputs.property("version", version)
+    inputs.property("moduleGroup", project.group)
+    inputs.property("moduleArtifact", project.name)
+    inputs.property("moduleVersion", project.version)
     outputs.dir(dynamicSources)
     tasks.withType(JavaCompile::class.java).forEach { it.dependsOn(this) }
     tasks.withType(KotlinCompile::class.java).forEach { it.dependsOn(this) }
@@ -55,7 +57,7 @@ task("generateDynamicSources") {
             package com.github.kr328.gradle.zygote;
             
             public final class BuildConfig {
-                public static final String VERSION = "$version";
+                public static final String RUNTIME_DEPENDENCY = "${project.group}:${project(":runtime").name}:${project.version}";
             }
             """.trimIndent()
         )

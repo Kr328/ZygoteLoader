@@ -18,10 +18,7 @@ class ZygoteLoaderPlugin : Plugin<Project> {
 
         val zygote = extensions.create("zygote", ZygoteLoaderExtension::class.java)
 
-        dependencies.add(
-            "implementation",
-            "com.github.kr328.zloader:runtime:${BuildConfig.VERSION}"
-        )
+        dependencies.add("implementation", BuildConfig.RUNTIME_DEPENDENCY)
 
         extensions.configureKtx(ApplicationAndroidComponentsExtension::class) {
             finalizeDslKtx {
