@@ -4,18 +4,14 @@ A library for building Java only Zygisk/Riru modules.
 
 ## Getting Start
 
-1. **Add gradle plugin to project**
+1. **Add plugin repository to settings.gradle.kts**
 
 ```kotlin
-buildscript {
-    repositories {
-        // ... other repositories
-        maven(url = "https://maven.kr328.app/releases")
-    }
-    dependencies {
-        // ... other dependencies
-        classpath("com.github.kr328.zloader:gradle-plugin:2.3")
-    }
+pluginManagement { 
+    repositories { 
+        // ... other repositories 
+        maven(url = "https://maven.kr328.app/releases") 
+    } 
 }
 ```
 
@@ -23,19 +19,19 @@ buildscript {
 
 ```java
 class Entrypoint {
-    // ZygoteLoader will invoke this method after injected to target project
+    // ZygoteLoader will invoke this method after injected to target process
     public static void main() {
         // ... your code
     }
 }
 ```
 
-3. **Apply zygote-loader plugin**
+3. **Apply `com.github.kr328.gradle.zygote` plugin**
 
 ```kotlin
 plugins {
     id("com.android.application") // required
-    id("zygote-loader") // apply plugin
+    id("com.github.kr328.gradle.zygote") version "2.5" // apply plugin
     // ... other plugins
 }
 ```
