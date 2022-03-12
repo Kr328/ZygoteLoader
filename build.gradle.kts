@@ -1,6 +1,6 @@
 subprojects {
     group = "com.github.kr328.gradle.zygote"
-    version = "2.5"
+    version = "2.6"
 
     apply(plugin = "maven-publish")
 

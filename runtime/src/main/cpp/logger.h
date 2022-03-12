@@ -1,21 +1,24 @@
 #pragma once
 
-#include <string>
 #include <android/log.h>
-#include <cstdlib>
+#include <stdlib.h>
 
-#define TAG "ZygoteLoader"
-
-#ifdef DEBUG
-#define fatal_assert(expr) if (!(expr)) Logger::f("!(" #expr ")")
-#else
-#define fatal_assert(expr) if (!(expr)) abort()
+#ifdef __cplusplus
+extern "C" {
 #endif
 
-class Logger {
-public:
-    static void i(std::string const &msg);
-    static void d(std::string const &msg);
-    static void e(std::string const &msg);
-    static void f(std::string const &msg);
+#define TAG "ZygoteLoader[Native]"
+
+#ifdef DEBUG
+#define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, TAG, __VA_ARGS__)
+#define LOGF(...) do { __android_log_print(ANDROID_LOG_FATAL, TAG, __VA_ARGS__); abort(); } while (0)
+#else
+#define LOGD(...)
+#define LOGF(...) abort()
+#endif
+
+#define fatal_assert(expr) if (!(expr)) LOGF("!(" #expr ")")
+
+#ifdef __cplusplus
 };
+#endif

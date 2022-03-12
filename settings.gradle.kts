@@ -24,14 +24,12 @@ dependencyResolutionManagement {
             val agp = "7.1.2"
             val annotation = "1.3.0"
             val riru = "26.0.0"
-            val cxx = "1.2.0"
 
             plugin("kotlin-jvm", "org.jetbrains.kotlin.jvm").version(kotlin)
             plugin("android-library", "com.android.library").version(agp)
             library("android-gradle", "com.android.tools.build", "gradle").version(agp)
             library("androidx-annotation", "androidx.annotation", "annotation").version(annotation)
             library("riru-runtime", "dev.rikka.ndk", "riru").version(riru)
-            library("cxx-runtime", "dev.rikka.ndk.thirdparty", "cxx").version(cxx)
         }
     }
 }

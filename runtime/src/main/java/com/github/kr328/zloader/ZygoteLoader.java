@@ -7,7 +7,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.attribute.PosixFilePermissions;
+import java.util.Collections;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public final class ZygoteLoader {
     /**
@@ -43,6 +46,50 @@ public final class ZygoteLoader {
             );
         } else {
             Files.deleteIfExists(path);
+        }
+    }
+
+    /**
+     * Get target packages enabled
+     *
+     * @param packageName target package name
+     * @return package enabled
+     */
+    public static boolean isPackageEnabled(String packageName) {
+        return Files.isRegularFile(Paths.get(Loader.getDynamicPackagesPath(), packageName));
+    }
+
+    /**
+     * List all enabled packages
+     *
+     * @return enabled package names
+     */
+    public static Set<String> getEnabledPackages() {
+        try {
+            return Files.list(Paths.get(Loader.getDynamicPackagesPath()))
+                    .map(Path::getFileName)
+                    .map(Path::toString)
+                    .collect(Collectors.toSet());
+        } catch (IOException e) {
+            return Collections.emptySet();
+        }
+    }
+
+    /**
+     * Disable all enabled packages
+     */
+    public static void disableAllPackages() {
+        try {
+            Files.list(Paths.get(Loader.getDynamicPackagesPath()))
+                    .forEach(p -> {
+                        try {
+                            Files.delete(p);
+                        } catch (IOException ignored) {
+                            // ignored
+                        }
+                    });
+        } catch (IOException ignored) {
+            // ignored
         }
     }
 

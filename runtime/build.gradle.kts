@@ -65,8 +65,6 @@ dependencies {
 
     compileOnly(deps.androidx.annotation)
 
-    implementation(deps.cxx.runtime)
-
     riruImplementation(deps.riru.runtime)
 }
 

@@ -1,15 +1,20 @@
 #pragma once
 
-#include <string>
 #include <jni.h>
+#include <stdint.h>
 
-class Dex {
-public:
-    static void loadAndInvokeLoader(
-            JNIEnv *env,
-            const std::string &packageName,
-            const void *dexFile, size_t dexFileLength,
-            const void *propertiesFile, size_t propertiesLength,
-            bool setTrusted, bool isDebuggable
-    );
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+void dex_load_and_invoke(
+        JNIEnv *env,
+        const char *package_name,
+        const void *dex_block, uint32_t dex_length,
+        const void *properties_block, uint32_t properties_length,
+        int set_trusted, int debuggable
+);
+
+#ifdef __cplusplus
 };
+#endif

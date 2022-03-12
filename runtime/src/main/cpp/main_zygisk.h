@@ -1,13 +1,12 @@
 #pragma once
 
-#include "delegate.h"
-#include "scoped.h"
+#include "main.h"
 
 #include "ext/zygisk.hpp"
 
-#include <string>
+#include <string.h>
 
-class ZygoteLoaderModule : public zygisk::ModuleBase, public Delegate {
+class ZygoteLoaderModule : public zygisk::ModuleBase {
 public:
     void onLoad(zygisk::Api *api, JNIEnv *env) override;
     void preAppSpecialize(zygisk::AppSpecializeArgs *args) override;
@@ -16,15 +15,14 @@ public:
     void postServerSpecialize(const zygisk::ServerSpecializeArgs *args) override;
 
 public:
-    Resource *getResource(ResourceType type) override;
-    bool shouldEnableForPackage(const std::string &packageName) override;
-    void setModuleInfoResolver(ModuleInfoResolver provider) override;
-    void setLoaderFactory(LoaderFactory factory) override;
+    void fetchResources();
+    void releaseResources();
+    bool shouldEnableForPackage(const char *packageName);
+    void tryLoadDex(bool systemServer);
 
 private:
     bool isInitialized();
     void initialize();
-    void purgeResourceCache();
 
 private:
     zygisk::Api *api = nullptr;
@@ -33,8 +31,6 @@ private:
     Resource *moduleProp = nullptr;
     Resource *classesDex = nullptr;
 
-    std::string currentProcessName;
-
-    Loader loader = [](JNIEnv *) {};
-    LoaderFactory factory = [](JNIEnv *, std::string const &, bool) { return [](JNIEnv *) {}; };
+    char *currentProcessName = nullptr;
+    bool debuggable = false;
 };

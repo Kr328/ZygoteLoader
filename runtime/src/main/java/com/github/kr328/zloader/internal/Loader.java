@@ -4,6 +4,8 @@ import android.util.Log;
 
 import androidx.annotation.RestrictTo;
 
+import com.github.kr328.zloader.BuildConfig;
+
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
@@ -25,6 +27,10 @@ public final class Loader {
 
     public static void load(final String packageName, final ByteBuffer properties) {
         try {
+            if (BuildConfig.DEBUG) {
+                Log.d(TAG, "Loading in " + packageName);
+            }
+
             init(packageName, StandardCharsets.UTF_8.decode(properties).toString());
         } catch (Throwable throwable) {
             Log.e(TAG, "doLoad: " + throwable, throwable);
