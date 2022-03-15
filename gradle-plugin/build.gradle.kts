@@ -1,9 +1,9 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    alias(deps.plugins.kotlin.jvm)
+    alias(libs.plugins.kotlin.jvm)
     `java-gradle-plugin`
-    java
+    `maven-publish`
 }
 
 val dynamicSources = buildDir.resolve("generated/dynamic")
@@ -15,7 +15,7 @@ java {
 
 dependencies {
     compileOnly(gradleApi())
-    compileOnly(deps.android.gradle)
+    compileOnly(libs.android.gradle)
 }
 
 sourceSets {

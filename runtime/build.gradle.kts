@@ -1,5 +1,5 @@
 plugins {
-    alias(deps.plugins.android.library)
+    alias(libs.plugins.android.library)
     `maven-publish`
 }
 
@@ -63,9 +63,9 @@ android {
 dependencies {
     val riruImplementation by configurations
 
-    compileOnly(deps.androidx.annotation)
+    compileOnly(libs.androidx.annotation)
 
-    riruImplementation(deps.riru.runtime)
+    riruImplementation(libs.riru.runtime)
 }
 
 afterEvaluate {

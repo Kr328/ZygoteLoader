@@ -19,7 +19,7 @@ dependencyResolutionManagement {
         google()
     }
     versionCatalogs {
-        create("deps") {
+        create("libs") {
             val kotlin = "1.6.10"
             val agp = "7.1.2"
             val annotation = "1.3.0"
