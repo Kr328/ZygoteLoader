@@ -1,7 +1,8 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    alias(libs.plugins.kotlin.jvm) apply false
+    kotlin("jvm") version "1.7.20" apply false
+    id("com.android.library") version "7.3.1" apply false
 }
 
 subprojects {
@@ -14,6 +15,9 @@ subprojects {
                 jvmTarget = "11"
             }
         }
+    }
+
+    plugins.withId("java") {
         extensions.configure<JavaPluginExtension> {
             sourceCompatibility = JavaVersion.VERSION_11
             targetCompatibility = JavaVersion.VERSION_11
@@ -31,8 +35,9 @@ subprojects {
                     credentials(PasswordCredentials::class.java)
                 }
             }
+
             publications {
-                create(project.name, MavenPublication::class) {
+                withType<MavenPublication> {
                     pom {
                         name.set("ZygoteLoader")
                         description.set("ZygoteLoader")
@@ -55,7 +60,6 @@ subprojects {
 
                     groupId = project.group.toString()
                     version = project.version.toString()
-                    artifactId = project.name
                 }
             }
         }

@@ -1,15 +1,18 @@
 plugins {
-    alias(libs.plugins.android.library)
+    id("com.android.library")
     `maven-publish`
 }
 
 android {
-    compileSdk = 31
+    compileSdk = 33
+
     ndkVersion = "23.1.7779620"
+
+    namespace = "com.github.kr328.zloader"
 
     defaultConfig {
         minSdk = 26
-        targetSdk = 31
+        targetSdk = 33
 
         consumerProguardFiles("consumer-rules.pro")
 
@@ -23,6 +26,7 @@ android {
 
     productFlavors {
         setFlavorDimensions(mutableListOf("loader"))
+
         create("riru") {
             dimension = "loader"
 
@@ -32,6 +36,7 @@ android {
                 }
             }
         }
+
         create("zygisk") {
             dimension = "loader"
 
@@ -42,15 +47,18 @@ android {
             }
         }
     }
+
     externalNativeBuild {
         cmake {
             path = file("src/main/cpp/CMakeLists.txt")
-            version = "3.18.1"
+            version = "3.22.1+"
         }
     }
+
     buildFeatures {
         prefab = true
     }
+
     publishing {
         multipleVariants("all") {
             withSourcesJar()
@@ -71,7 +79,9 @@ dependencies {
 afterEvaluate {
     publishing {
         publications {
-            named(project.name, MavenPublication::class) {
+            create(project.name, MavenPublication::class) {
+                artifactId = "runtime"
+
                 from(components["all"])
             }
         }
