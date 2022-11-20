@@ -22,7 +22,7 @@ abstract class ChecksumTask : DefaultTask() {
 
         val script = root.walk()
             .filter { it.isFile }
-            .map { it.relativeTo(root).path.replace('\\', '/') }
+            .map { it.relativeTo(root).invariantSeparatorsPath }
             .filterNot { it.startsWith("META-INF") }
             .sorted()
             .map {
