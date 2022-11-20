@@ -7,7 +7,7 @@ plugins {
 
 subprojects {
     group = "com.github.kr328.gradle.zygote"
-    version = "2.6"
+    version = "2.7"
 
     plugins.withId("org.jetbrains.kotlin.jvm") {
         tasks.withType(KotlinCompile::class) {
