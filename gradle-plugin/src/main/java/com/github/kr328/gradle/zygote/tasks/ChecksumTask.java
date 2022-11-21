@@ -52,11 +52,7 @@ public abstract class ChecksumTask extends DefaultTask {
 
                 @Override
                 public void write(@Nonnull byte[] b, int off, int len) throws IOException {
-                    try {
-                        sha256.digest(b, off, len);
-                    } catch (DigestException e) {
-                        throw new IOException(e);
-                    }
+                    sha256.update(b, off, len);
                 }
             };
 
