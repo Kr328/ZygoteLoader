@@ -2,8 +2,8 @@ package com.github.kr328.gradle.zygote;
 
 import org.gradle.api.Action;
 
-import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Set;
 
@@ -47,7 +47,7 @@ public class ZygoteLoaderExtension {
         packages.addAll(List.of(pkgs));
     }
 
-    public static class Properties extends HashMap<String, String> {
+    public static class Properties extends LinkedHashMap<String, String> {
         @Override
         public String put(String key, String value) {
             if (value == null) {
