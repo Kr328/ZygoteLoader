@@ -1,21 +1,10 @@
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-
 plugins {
-    kotlin("jvm") version "1.7.20" apply false
     id("com.android.library") version "7.3.1" apply false
 }
 
 subprojects {
     group = "com.github.kr328.gradle.zygote"
-    version = "2.6"
-
-    plugins.withId("org.jetbrains.kotlin.jvm") {
-        tasks.withType(KotlinCompile::class) {
-            kotlinOptions {
-                jvmTarget = "11"
-            }
-        }
-    }
+    version = "2.7"
 
     plugins.withId("java") {
         extensions.configure<JavaPluginExtension> {
