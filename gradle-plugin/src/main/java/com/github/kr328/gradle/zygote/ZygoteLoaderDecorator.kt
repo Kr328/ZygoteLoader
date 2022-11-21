@@ -78,7 +78,7 @@ object ZygoteLoaderDecorator {
             val nativeLibs = artifacts.get(InternalArtifactType.MERGED_NATIVE_LIBS)
             val dex = artifacts.getAll(InternalMultipleArtifactType.DEX).map { it.single() }
 
-            dependsOn(flattenAssets, generateInitialPackages, generateModuleProp, packing)
+            dependsOn(packing)
 
             destinationDir = buildDir.resolve("intermediates/merged_magisk/${variant.name}")
 
@@ -103,9 +103,9 @@ object ZygoteLoaderDecorator {
             fromKtx(dex) {
                 include("classes.dex")
             }
-            fromKtx(flattenAssets.get().destinationDir.asFile.resolve("assets"))
-            fromKtx(generateInitialPackages.get().destinationDir)
-            fromKtx(generateModuleProp.get().destinationDir)
+            fromKtx(flattenAssets.flatMap { it.destinationDir.dir("assets") })
+            fromKtx(generateInitialPackages.flatMap { it.destinationDir })
+            fromKtx(generateModuleProp.flatMap { it.destinationDir })
         }
 
         val generateChecksum = tasks.registerKtx(
@@ -122,19 +122,19 @@ object ZygoteLoaderDecorator {
             "generateCustomize$capitalized",
             CustomizeTask::class,
         ) {
-            dependsOn(mergeMagisk, generateChecksum)
+            dependsOn(mergeMagisk)
 
             destinationDir.set(buildDir.resolve("generated/customize_sh/${variant.name}"))
 
             customizeFiles.set(mergeMagisk.get().destinationDir.resolve("customize.d"))
-            checksumFiles.set(generateChecksum.get().destinationDir.get().asFile.resolve("customize.d"))
+            checksumFiles.set(generateChecksum.flatMap { it.destinationDir.dir("customize.d") })
         }
 
         val packagingMagisk = tasks.registerKtx(
             "packageMagisk$capitalized",
             Zip::class
         ) {
-            dependsOn(mergeMagisk, generateCustomize)
+            dependsOn(mergeMagisk)
 
             val destinationDir = buildDir.resolve("outputs/magisk")
                 .resolve("${variant.flavorName}")
@@ -151,8 +151,8 @@ object ZygoteLoaderDecorator {
             isPreserveFileTimestamps = false
 
             fromKtx(mergeMagisk.get().destinationDir)
-            fromKtx(generateCustomize.get().destinationDir)
-            fromKtx(generateChecksum.get().destinationDir)
+            fromKtx(generateCustomize.flatMap { it.destinationDir })
+            fromKtx(generateChecksum.flatMap { it.destinationDir })
         }
 
         tasks.getByName("assemble$capitalized").dependsOn(packagingMagisk)
