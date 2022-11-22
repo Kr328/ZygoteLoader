@@ -1,7 +1,5 @@
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-
 plugins {
-    kotlin("jvm")
+    java
     `java-gradle-plugin`
     `maven-publish`
 }
@@ -38,7 +36,6 @@ task("generateDynamicSources") {
     inputs.property("moduleVersion", project.version)
     outputs.dir(dynamicSources)
     tasks.withType(JavaCompile::class.java).forEach { it.dependsOn(this) }
-    tasks.withType(KotlinCompile::class.java).forEach { it.dependsOn(this) }
     tasks["sourcesJar"].dependsOn(this)
 
     doFirst {
