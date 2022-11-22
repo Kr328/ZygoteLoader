@@ -14,7 +14,7 @@ if [ ! -f "$DATA_PATH_FILE" ]; then
   echo -n "/data/system/zloader-$RANDOM_SUFFIX" > "$DATA_PATH_FILE"
 fi
 
-DATA_PATH="$(cat "$DATA_PATH_FILE" | head -n 1 | xargs printf)"
+DATA_PATH="$(head -n 1 "$DATA_PATH_FILE")"
 MODULE_DATA_PATH="$DATA_PATH/$(grep_prop id "$MODPATH/module.prop")"
 
 ui_print "- Initialize module data directory"
