@@ -31,7 +31,7 @@ class Entrypoint {
 ```kotlin
 plugins {
     id("com.android.application") // required
-    id("com.github.kr328.gradle.zygote") version "2.5" // apply plugin
+    id("com.github.kr328.gradle.zygote") version "2.7" // apply plugin
     // ... other plugins
 }
 ```
