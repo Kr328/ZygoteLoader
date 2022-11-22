@@ -130,13 +130,7 @@ public final class ZygoteLoaderDecorator {
                     // assets
                     task.from(apk, sp -> {
                         sp.include("assets/**");
-                        sp.eachFile(file -> {
-                            if (file.getPath().startsWith("assets/META-INF") || file.getPath().endsWith(".sh")) {
-                                file.filter(Map.of("eol", FixCrLfFilter.CrLf.newInstance("lf")), FixCrLfFilter.class);
-                            }
-
-                            file.setPath(file.getPath().substring("assets/".length()));
-                        });
+                        sp.eachFile(file -> file.setPath(file.getPath().substring("assets/".length())));
                     });
                 }
         );

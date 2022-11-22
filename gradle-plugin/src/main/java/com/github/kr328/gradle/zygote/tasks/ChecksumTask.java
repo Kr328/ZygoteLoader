@@ -11,7 +11,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.security.DigestException;
 import java.security.MessageDigest;
 import java.util.List;
 import java.util.Map;
@@ -31,12 +30,10 @@ public abstract class ChecksumTask extends DefaultTask {
             "    (echo \"$2  $MODPATH/$1\" | sha256sum -c -s -) || abort \"! Module resource '$1' verify failed\"",
             "",
             "    ui_print \"  '$1' verified\"",
-            "}",
-            ""
+            "}"
     );
 
     private static final String VERIFY_TAIL = String.join("\n",
-            "",
             "unset -f do_verify"
     );
 
@@ -51,7 +48,7 @@ public abstract class ChecksumTask extends DefaultTask {
                 }
 
                 @Override
-                public void write(@Nonnull byte[] b, int off, int len) throws IOException {
+                public void write(@Nonnull byte[] b, int off, int len) {
                     sha256.update(b, off, len);
                 }
             };
@@ -87,7 +84,7 @@ public abstract class ChecksumTask extends DefaultTask {
                 .collect(Collectors.toList());
 
         final StringBuilder sb = new StringBuilder();
-        sb.append(VERIFY_HEADER).append('\n');
+        sb.append(VERIFY_HEADER).append("\n\n");
 
         for (final Map.Entry<String, String> checksum : checksums) {
             sb.append("do_verify ")
@@ -97,7 +94,7 @@ public abstract class ChecksumTask extends DefaultTask {
                     .append('\n');
         }
 
-        sb.append(VERIFY_TAIL);
+        sb.append("\n\n").append(VERIFY_TAIL);
 
         Files.writeString(getDestinationFile().getAsFile().get().toPath(), sb);
     }
