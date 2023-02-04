@@ -2,8 +2,6 @@ cmake_minimum_required(VERSION 3.10.2)
 
 project(ZygoteLoader)
 
-message("Build type: ${CMAKE_BUILD_TYPE}")
-
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_C_STANDARD 11)
 
@@ -24,7 +22,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${C_FLAGS}")
 set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${LINKER_FLAGS}")
 set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} ${LINKER_FLAGS}")
 
-set(MODULE_BASE_SOURCES serializer.c properties.c process.c linker.c dex.c main.c mem.cpp)
+set(MODULE_BASE_SOURCES serializer.c properties.c process.c dex.c main.c mem.cpp binder.c ext/plt.c)
 
 if(LOADER STREQUAL "zygisk")
     add_library(zygisk_loader SHARED main_zygisk.cpp ${MODULE_BASE_SOURCES})

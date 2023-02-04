@@ -10,7 +10,7 @@
 
 #include <stddef.h>
 #include <string.h>
-#include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
 #include <fcntl.h>
 
@@ -30,11 +30,11 @@ static int *riruAllowUnload;
 
 static const char *moduleDirectory;
 static const char *dataDirectory;
+static int useBinderInterceptors;
 
 static char *packageName;
-static int debuggable;
 
-static int shouldSkipUid(int uid) {
+static int shouldSkipUid(_unused int uid) {
     return 0;
 }
 
@@ -60,36 +60,34 @@ static int shouldEnableForPackage(const char *pkg) {
     return 0;
 }
 
-static void onProcessForkPre(JNIEnv *env, jstring niceName, jint runtimeFlags) {
-    if (niceName == NULL) {
+static void onProcessForkPre(JNIEnv *env, jstring niceName) {
+    if (niceName == nullptr) {
         packageName = strdup(PACKAGE_NAME_SYSTEM_SERVER);
     } else {
         process_get_package_name(env, niceName, &packageName);
     }
 
-    if (shouldEnableForPackage(packageName)) {
-        debuggable = (runtimeFlags & ZYGOTE_DEBUG_ENABLE_JDWP) != 0;
-    } else {
+    if (!shouldEnableForPackage(packageName)) {
         free(packageName);
-        packageName = NULL;
+        packageName = nullptr;
     }
 }
 
-static void onProcessForkPost(JNIEnv *env, jint res, int systemServer) {
+static void onProcessForkPost(JNIEnv *env, jint res) {
     if (res == 0) {
         if (riruAllowUnload) {
-            *riruAllowUnload = 1;
+            *riruAllowUnload = !useBinderInterceptors;
         }
 
-        if (packageName != NULL) {
-            LOGD("Loading in %s: setTrusted = %d, debuggable = %d", packageName, !systemServer, debuggable);
+        if (packageName != nullptr) {
+            LOGD("Loading in %s", packageName);
 
             dex_load_and_invoke(
                     env,
                     packageName,
                     classesDex->base, classesDex->length,
                     moduleProp->base, moduleProp->length,
-                    !systemServer, debuggable
+                    useBinderInterceptors
             );
         }
 
@@ -98,75 +96,104 @@ static void onProcessForkPost(JNIEnv *env, jint res, int systemServer) {
     }
 
     free(packageName);
-    packageName = NULL;
+    packageName = nullptr;
 }
 
 static void nativeForkSystemServerPre(
-        JNIEnv *env, jclass cls,
-        uid_t *uid, gid_t *gid, jintArray *gids,
-        jint *runtimeFlags, jobjectArray *rlimits,
-        jlong *permittedCapabilities,
-        jlong *effectiveCapabilities
+        JNIEnv *env, _unused jclass cls,
+        _unused uid_t *uid, _unused gid_t *gid, _unused jintArray *gids,
+        _unused jint *runtimeFlags, _unused jobjectArray *rlimits,
+        _unused jlong *permittedCapabilities,
+        _unused jlong *effectiveCapabilities
 ) {
-    onProcessForkPre(env, NULL, 0);
+    onProcessForkPre(env, nullptr);
 }
 
-static void nativeForkSystemServerPost(JNIEnv *env, jclass cls, jint res) {
-    onProcessForkPost(env, res, 1);
+static void nativeForkSystemServerPost(JNIEnv *env, _unused jclass cls, jint res) {
+    onProcessForkPost(env, res);
 }
 
 static void nativeForkAndSpecializePre(
-        JNIEnv *env, jclass cls, jint *uid, jint *gid, jintArray *gids, jint *runtimeFlags,
-        jobjectArray *rlimits, jint *mountExternal, jstring *seInfo, jstring *niceName,
-        jintArray *fdsToClose, jintArray *fdsToIgnore, jboolean *is_child_zygote,
-        jstring *instructionSet, jstring *appDataDir, jboolean *isTopApp,
-        jobjectArray *pkgDataInfoList,
-        jobjectArray *whitelistedDataInfoList, jboolean *bindMountAppDataDirs,
-        jboolean *bindMountAppStorageDirs
+        JNIEnv *env,
+        _unused jclass cls,
+        _unused jint *uid,
+        _unused jint *gid,
+        _unused jintArray *gids,
+        _unused jint *runtimeFlags,
+        _unused jobjectArray *rlimits,
+        _unused jint *mountExternal,
+        _unused jstring *seInfo,
+        jstring *niceName,
+        _unused jintArray *fdsToClose,
+        _unused jintArray *fdsToIgnore,
+        _unused jboolean *is_child_zygote,
+        _unused jstring *instructionSet,
+        _unused jstring *appDataDir,
+        _unused jboolean *isTopApp,
+        _unused jobjectArray *pkgDataInfoList,
+        _unused jobjectArray *whitelistedDataInfoList,
+        _unused jboolean *bindMountAppDataDirs,
+        _unused jboolean *bindMountAppStorageDirs
 ) {
-    onProcessForkPre(env, *niceName, *runtimeFlags);
+    onProcessForkPre(env, *niceName);
 }
 
-static void nativeForkAndSpecializePost(JNIEnv *env, jclass cls, jint res) {
-    onProcessForkPost(env, res, 0);
+static void nativeForkAndSpecializePost(JNIEnv *env, _unused jclass cls, jint res) {
+    onProcessForkPost(env, res);
 }
 
 static void nativeSpecializeAppProcessPre(
-        JNIEnv *env, jclass cls, jint *uid, jint *gid, jintArray *gids, jint *runtimeFlags,
-        jobjectArray *rlimits, jint *mountExternal, jstring *seInfo, jstring *niceName,
-        jboolean *startChildZygote, jstring *instructionSet, jstring *appDataDir,
-        jboolean *isTopApp, jobjectArray *pkgDataInfoList, jobjectArray *whitelistedDataInfoList,
-        jboolean *bindMountAppDataDirs, jboolean *bindMountAppStorageDirs
+        JNIEnv *env,
+        _unused jclass cls,
+        _unused jint *uid,
+        _unused jint *gid,
+        _unused jintArray *gids,
+        _unused jint *runtimeFlags,
+        _unused jobjectArray *rlimits,
+        _unused jint *mountExternal,
+        _unused jstring *seInfo,
+        jstring *niceName,
+        _unused jboolean *startChildZygote,
+        _unused jstring *instructionSet,
+        _unused jstring *appDataDir,
+        _unused jboolean *isTopApp,
+        _unused jobjectArray *pkgDataInfoList,
+        _unused jobjectArray *whitelistedDataInfoList,
+        _unused jboolean *bindMountAppDataDirs,
+        _unused jboolean *bindMountAppStorageDirs
 ) {
-    onProcessForkPre(env, *niceName, *runtimeFlags);
+    onProcessForkPre(env, *niceName);
 }
 
-static void nativeSpecializeAppProcessPost(JNIEnv *env, jclass clazz) {
-    onProcessForkPost(env, 0, 0);
+static void nativeSpecializeAppProcessPost(JNIEnv *env, _unused jclass clazz) {
+    onProcessForkPost(env, 0);
 }
 
-static void contributeModule(struct Module *module, const char *key, const char *value) {
+static void scanModule(struct Module *module, const char *key, const char *value) {
     if (strcmp("version", key) == 0) {
         module->versionName = strdup(value);
     } else if (strcmp("versionCode", key) == 0) {
-        module->versionCode = strtol(value, NULL, 10);
+        module->versionCode = strtol(value, nullptr, 10);
     } else if (strcmp("dataDirectory", key) == 0) {
         module->dataDirectory = strdup(value);
+    } else if (strcmp("useBinderInterceptors", key) == 0) {
+        module->useBinderInterceptors = (strcmp("true", value) == 0);
     }
 }
 
 RiruVersionedModuleInfo *init(Riru *riru) {
     int apiVersion = riru->riruApiVersion;
     if (apiVersion < MIN_API_VERSION) {
-        return NULL;
-    }
-    if (apiVersion > TARGET_API_VERSION)
+        return nullptr;
+    } else if (apiVersion > TARGET_API_VERSION) {
         apiVersion = TARGET_API_VERSION;
+    }
 
     riruAllowUnload = riru->allowUnload;
     moduleDirectory = strdup(riru->magiskModulePath);
 
-    LOGD("Initializing: moduleDirectory = %s, riruApiVersion = %d", moduleDirectory, riru->riruApiVersion);
+    LOGD("Initializing: moduleDirectory = %s, riruApiVersion = %d",
+         moduleDirectory, riru->riruApiVersion);
 
     char path[PATH_MAX] = {0};
     sprintf(path, "%s/%s", moduleDirectory, "module.prop");
@@ -175,21 +202,23 @@ RiruVersionedModuleInfo *init(Riru *riru) {
     classesDex = resource_map_file(path);
 
     struct Module module = {
-            .dataDirectory = NULL,
-            .versionName = NULL,
+            .dataDirectory = nullptr,
+            .versionName = nullptr,
             .versionCode = -1,
+            .useBinderInterceptors = 0,
     };
     properties_for_each(
             moduleProp->base, moduleProp->length,
-            &module, reinterpret_cast<properties_for_each_block>(&contributeModule)
+            &module, reinterpret_cast<properties_for_each_block>(&scanModule)
     );
-    fatal_assert(module.versionName != NULL);
+    fatal_assert(module.versionName != nullptr);
     fatal_assert(module.versionCode >= 0);
-    fatal_assert(module.dataDirectory != NULL);
+    fatal_assert(module.dataDirectory != nullptr);
 
     dataDirectory = module.dataDirectory;
+    useBinderInterceptors = module.useBinderInterceptors;
 
-    RiruVersionedModuleInfo *result = new RiruVersionedModuleInfo();
+    auto result = new RiruVersionedModuleInfo();
     result->moduleApiVersion = apiVersion;
     result->moduleInfo = RiruModuleInfo{
             .supportHide = SUPPORT_HIDE,
