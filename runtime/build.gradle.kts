@@ -12,7 +12,6 @@ android {
 
     defaultConfig {
         minSdk = 26
-        targetSdk = 33
 
         consumerProguardFiles("consumer-rules.pro")
 
@@ -62,6 +61,7 @@ android {
     publishing {
         multipleVariants("all") {
             withSourcesJar()
+            withJavadocJar()
             includeBuildTypeValues("debug", "release")
             includeFlavorDimensionAndValues("loader", "riru", "zygisk")
         }

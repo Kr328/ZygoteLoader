@@ -16,13 +16,15 @@ public:
 
 public:
     void fetchResources();
-    void releaseResources();
+    void reset();
     bool shouldEnableForPackage(const char *packageName);
-    void tryLoadDex(bool systemServer);
+    void prepareFork();
+    void tryLoadDex();
 
 private:
-    bool isInitialized();
     void initialize();
+    bool isInitialized();
+    bool isUseBinderInterceptors();
 
 private:
     zygisk::Api *api = nullptr;
@@ -32,5 +34,5 @@ private:
     Resource *classesDex = nullptr;
 
     char *currentProcessName = nullptr;
-    bool debuggable = false;
+    bool useBinderInterceptors = false;
 };

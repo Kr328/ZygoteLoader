@@ -1,21 +1,28 @@
 package com.github.kr328.zloader;
 
+import androidx.annotation.NonNull;
+
 import com.github.kr328.zloader.internal.Loader;
 
 import java.io.IOException;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.PosixFilePermissions;
-import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
+/**
+ * Utilize to manage ZygoteLoader.
+ */
 public final class ZygoteLoader {
     /**
      * Package name that indicate currently in system_server
-     *
+     * <p>
      * {@link #getPackageName}
      */
     public static final String PACKAGE_SYSTEM_SERVER = ".android";
@@ -25,10 +32,10 @@ public final class ZygoteLoader {
      * Set should ZygoteLoader inject to {@code packageName}
      *
      * @param packageName target package name
-     * @param enabled should inject to {@code packageName}
-     * @throws IOException if set status failed
+     * @param enabled     should inject to {@code packageName}
+     * @throws IOException if permission denied
      */
-    public static void setPackageEnabled(String packageName, boolean enabled) throws IOException {
+    public static void setPackageEnabled(@NonNull final String packageName, final boolean enabled) throws IOException {
         if (packageName.isEmpty())
             return;
 
@@ -54,42 +61,41 @@ public final class ZygoteLoader {
      *
      * @param packageName target package name
      * @return package enabled
+     * @throws IOException if permission denied
      */
-    public static boolean isPackageEnabled(String packageName) {
-        return Files.isRegularFile(Paths.get(Loader.getDynamicPackagesPath(), packageName));
+    public static boolean isPackageEnabled(@NonNull final String packageName) throws IOException {
+        return Files.readAttributes(
+                Paths.get(Loader.getDynamicPackagesPath(), packageName),
+                BasicFileAttributes.class
+        ).isRegularFile();
     }
 
     /**
-     * List all enabled packages
+     * List all enabled packages.
      *
      * @return enabled package names
+     * @throws IOException if permission denied
      */
-    public static Set<String> getEnabledPackages() {
-        try {
-            return Files.list(Paths.get(Loader.getDynamicPackagesPath()))
+    @NonNull
+    public static Set<String> getEnabledPackages() throws IOException {
+        try (final Stream<Path> files = Files.list(Paths.get(Loader.getDynamicPackagesPath()))) {
+            return files
                     .map(Path::getFileName)
                     .map(Path::toString)
                     .collect(Collectors.toSet());
-        } catch (IOException e) {
-            return Collections.emptySet();
         }
     }
 
     /**
      * Disable all enabled packages
+     *
+     * @throws IOException if permission denied
      */
-    public static void disableAllPackages() {
-        try {
-            Files.list(Paths.get(Loader.getDynamicPackagesPath()))
-                    .forEach(p -> {
-                        try {
-                            Files.delete(p);
-                        } catch (IOException ignored) {
-                            // ignored
-                        }
-                    });
-        } catch (IOException ignored) {
-            // ignored
+    public static void disableAllPackages() throws IOException {
+        try (final DirectoryStream<Path> files = Files.newDirectoryStream(Paths.get(Loader.getDynamicPackagesPath()))) {
+            for (final Path file : files) {
+                Files.delete(file);
+            }
         }
     }
 
@@ -98,6 +104,7 @@ public final class ZygoteLoader {
      *
      * @return module data directory
      */
+    @NonNull
     public static String getDataDirectory() {
         return Loader.getDataDirectory();
     }
@@ -107,6 +114,7 @@ public final class ZygoteLoader {
      *
      * @return package name
      */
+    @NonNull
     public static String getPackageName() {
         return Loader.getPackageName();
     }
@@ -116,6 +124,7 @@ public final class ZygoteLoader {
      *
      * @return map of module.prop
      */
+    @NonNull
     public static Map<String, String> getProperties() {
         return Loader.getProperties();
     }

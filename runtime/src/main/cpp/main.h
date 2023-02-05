@@ -6,6 +6,8 @@
 extern "C" {
 #endif
 
+#define _unused [[maybe_unused]]
+
 struct Resource {
     void *base;
     uint32_t length;

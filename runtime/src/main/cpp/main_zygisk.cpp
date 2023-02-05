@@ -15,12 +15,19 @@
 #include <pthread.h>
 
 enum FileCommand : int {
-    INITIALIZE, IS_INITIALIZED, GET_RESOURCES, SHOULD_ENABLE_FOR_PACKAGE
+    INITIALIZE, IS_INITIALIZED, IS_USE_BINDER_INTERCEPTORS, GET_RESOURCES, SHOULD_ENABLE_FOR_PACKAGE
 };
 
-static void findDataDirectory(char *output, const char *key, const char *value) {
+struct InitializeData {
+    char dataDirectory[PATH_MAX] = {0};
+    bool useBinderInterceptors = false;
+};
+
+static void extractInitializeData(InitializeData *data, const char *key, const char *value) {
     if (strcmp(key, "dataDirectory") == 0) {
-        strcpy(output, value);
+        strcpy(data->dataDirectory, value);
+    } else if (strcmp(key, "useBinderInterceptors") == 0) {
+        data->useBinderInterceptors = (strcmp(value, "true") == 0);
     }
 }
 
@@ -30,6 +37,7 @@ static void handleFileRequest(int client) {
     static int classesDex = -1;
     static int moduleDirectory = -1;
     static int dataDirectory = -1;
+    static bool useBinderInterceptors = false;
 
     int command = -1;
     fatal_assert(serializer_read_int(client, &command) > 0);
@@ -49,20 +57,22 @@ static void handleFileRequest(int client) {
                 classesDex = openat(moduleDirectory, "classes.dex", O_RDONLY);
                 fatal_assert(classesDex >= 0);
 
-                char dataDirectoryPath[PATH_MAX] = {0};
+                InitializeData initializeData;
                 Resource *block = resource_map_fd(moduleProp);
                 properties_for_each(
                         block->base, block->length,
-                        dataDirectoryPath,
-                        reinterpret_cast<properties_for_each_block>(&findDataDirectory)
+                        &initializeData,
+                        reinterpret_cast<properties_for_each_block>(&extractInitializeData)
                 );
                 resource_release(block);
-                fatal_assert(strlen(dataDirectoryPath) > 0);
+                fatal_assert(strlen(initializeData.dataDirectory) > 0);
 
-                dataDirectory = open(dataDirectoryPath, O_RDONLY | O_DIRECTORY);
+                dataDirectory = open(initializeData.dataDirectory, O_RDONLY | O_DIRECTORY);
                 fatal_assert(dataDirectory >= 0);
 
-                LOGD("Remote initialized: dataDirectory = %s", dataDirectoryPath);
+                useBinderInterceptors = initializeData.useBinderInterceptors;
+
+                LOGD("Remote initialized: dataDirectory = %s", initializeData.dataDirectory);
             }
 
             fatal_assert(serializer_write_int(client, 1) > 0);
@@ -77,6 +87,11 @@ static void handleFileRequest(int client) {
             fatal_assert(serializer_write_int(client, moduleDirectory != -1 ? 1 : 0) > 0);
 
             pthread_mutex_unlock(&initializeLock);
+
+            break;
+        }
+        case IS_USE_BINDER_INTERCEPTORS: {
+            fatal_assert(serializer_write_int(client, useBinderInterceptors ? 1 : 0) > 0);
 
             break;
         }
@@ -123,34 +138,26 @@ void ZygoteLoaderModule::onLoad(zygisk::Api *_api, JNIEnv *_env) {
 
         initialize();
     }
-
-    api->setOption(zygisk::DLCLOSE_MODULE_LIBRARY);
 }
 
 void ZygoteLoaderModule::preAppSpecialize(zygisk::AppSpecializeArgs *args) {
     process_get_package_name(env, args->nice_name, &currentProcessName);
-    if (shouldEnableForPackage(currentProcessName)) {
-        debuggable = (args->runtime_flags & ZYGOTE_DEBUG_ENABLE_JDWP) != 0;
-        fetchResources();
-    } else {
-        free(currentProcessName);
-        currentProcessName = nullptr;
-    }
+
+    prepareFork();
 }
 
 void ZygoteLoaderModule::postAppSpecialize(const zygisk::AppSpecializeArgs *args) {
-    tryLoadDex(false);
+    tryLoadDex();
 }
 
 void ZygoteLoaderModule::preServerSpecialize(zygisk::ServerSpecializeArgs *args) {
-    if (shouldEnableForPackage(PACKAGE_NAME_SYSTEM_SERVER)) {
-        currentProcessName = strdup(PACKAGE_NAME_SYSTEM_SERVER);
-        fetchResources();
-    }
+    currentProcessName = strdup(PACKAGE_NAME_SYSTEM_SERVER);
+
+    prepareFork();
 }
 
 void ZygoteLoaderModule::postServerSpecialize(const zygisk::ServerSpecializeArgs *args) {
-    tryLoadDex(true);
+    tryLoadDex();
 }
 
 void ZygoteLoaderModule::fetchResources() {
@@ -172,26 +179,49 @@ void ZygoteLoaderModule::fetchResources() {
     close(classesDexFd);
 }
 
-void ZygoteLoaderModule::releaseResources() {
-    resource_release(moduleProp);
-    resource_release(classesDex);
+void ZygoteLoaderModule::reset() {
+    useBinderInterceptors = false;
+
+    free(currentProcessName);
+
+    currentProcessName = nullptr;
+
+    if (moduleProp != nullptr) {
+        resource_release(moduleProp);
+    }
+    if (classesDex != nullptr) {
+        resource_release(classesDex);
+    }
 }
 
-void ZygoteLoaderModule::tryLoadDex(bool systemServer) {
-    if (currentProcessName != nullptr && classesDex != nullptr && moduleProp != nullptr) {
-        LOGD("Enable for package %s", currentProcessName);
+void ZygoteLoaderModule::prepareFork() {
+    if (shouldEnableForPackage(currentProcessName)) {
+        fetchResources();
 
-        LOGD("Loading in %s: setTrusted = %d, debuggable = %d", currentProcessName, !systemServer, debuggable);
+        useBinderInterceptors = isUseBinderInterceptors();
+    } else {
+        reset();
+    }
+
+    if (!useBinderInterceptors) {
+        LOGD("Request dlclose module");
+
+        api->setOption(zygisk::DLCLOSE_MODULE_LIBRARY);
+    }
+}
+
+void ZygoteLoaderModule::tryLoadDex() {
+    if (currentProcessName != nullptr && classesDex != nullptr && moduleProp != nullptr) {
+        LOGD("Loading in %s", currentProcessName);
 
         dex_load_and_invoke(
                 env, currentProcessName,
                 classesDex->base, classesDex->length,
                 moduleProp->base, moduleProp->length,
-                !systemServer, debuggable
+                useBinderInterceptors
         );
 
-        free(currentProcessName);
-        releaseResources();
+        reset();
     }
 }
 
@@ -212,6 +242,20 @@ bool ZygoteLoaderModule::shouldEnableForPackage(const char *packageName) {
     return r != 0;
 }
 
+void ZygoteLoaderModule::initialize() {
+    int remote = api->connectCompanion();
+
+    int moduleDir = api->getModuleDir();
+    fatal_assert(moduleDir >= 0);
+
+    fatal_assert(serializer_write_int(remote, INITIALIZE) > 0);
+    fatal_assert(serializer_write_file_descriptor(remote, moduleDir) > 0);
+
+    int initialized = -1;
+    fatal_assert(serializer_read_int(remote, &initialized) > 0);
+    fatal_assert(initialized == 1);
+}
+
 bool ZygoteLoaderModule::isInitialized() {
     int remote = api->connectCompanion();
     fatal_assert(remote >= 0);
@@ -226,19 +270,20 @@ bool ZygoteLoaderModule::isInitialized() {
     return initialized != 0;
 }
 
-void ZygoteLoaderModule::initialize() {
+bool ZygoteLoaderModule::isUseBinderInterceptors() {
     int remote = api->connectCompanion();
+    fatal_assert(remote >= 0);
 
-    int moduleDir = api->getModuleDir();
-    fatal_assert(moduleDir >= 0);
+    fatal_assert(serializer_write_int(remote, IS_USE_BINDER_INTERCEPTORS) > 0);
 
-    fatal_assert(serializer_write_int(remote, INITIALIZE) > 0);
-    fatal_assert(serializer_write_file_descriptor(remote, moduleDir) > 0);
+    int enabled = 0;
+    fatal_assert(serializer_read_int(remote, &enabled) > 0);
 
-    int initialized = -1;
-    fatal_assert(serializer_read_int(remote, &initialized) > 0);
-    fatal_assert(initialized == 1);
+    close(remote);
+
+    return enabled != 0;
 }
+
 
 REGISTER_ZYGISK_MODULE(ZygoteLoaderModule)
 

@@ -1,5 +1,6 @@
 #include "serializer.h"
 
+#include <assert.h>
 #include <errno.h>
 #include <string.h>
 #include <fcntl.h>
@@ -23,7 +24,7 @@ int32_t serializer_read_full(int conn, void *buffer, uint32_t length) {
         remain -= r;
     }
 
-    return length;
+    return (int32_t) length;
 }
 
 int32_t serializer_write_full(int conn, const void *buffer, uint32_t length) {
@@ -40,7 +41,7 @@ int32_t serializer_write_full(int conn, const void *buffer, uint32_t length) {
         remain -= r;
     }
 
-    return length;
+    return (int32_t) length;
 }
 
 int32_t serializer_read_file_descriptor(int conn, int *fd) {
@@ -63,6 +64,7 @@ int32_t serializer_read_file_descriptor(int conn, int *fd) {
     msg.msg_controllen = CMSG_SPACE(sizeof(fd));
 
     struct cmsghdr *ctl_hdr = CMSG_FIRSTHDR(&msg);
+    assert(ctl_hdr != NULL);
     ctl_hdr->cmsg_level = SOL_SOCKET;
     ctl_hdr->cmsg_type = SCM_RIGHTS;
     ctl_hdr->cmsg_len = CMSG_LEN(sizeof(fd));
@@ -78,7 +80,7 @@ int32_t serializer_read_file_descriptor(int conn, int *fd) {
         return -1;
     }
 
-    *fd = *(int *)(CMSG_DATA(ctl_hdr));
+    *fd = *(int *) (CMSG_DATA(ctl_hdr));
 
     return r;
 }
@@ -103,11 +105,12 @@ int32_t serializer_write_file_descriptor(int conn, int fd) {
     msg.msg_controllen = CMSG_SPACE(sizeof(fd));
 
     struct cmsghdr *ctl_hdr = CMSG_FIRSTHDR(&msg);
+    assert(ctl_hdr);
     ctl_hdr->cmsg_level = SOL_SOCKET;
     ctl_hdr->cmsg_type = SCM_RIGHTS;
     ctl_hdr->cmsg_len = CMSG_LEN(sizeof(fd));
 
-    *(int *)(CMSG_DATA(ctl_hdr)) = fd;
+    *(int *) (CMSG_DATA(ctl_hdr)) = fd;
 
     return sendmsg(conn, &msg, 0);
 }
@@ -130,7 +133,7 @@ int32_t serializer_read_string(int conn, char **str) {
 
     (*str)[length] = '\0';
 
-    return r + sizeof(uint64_t);
+    return r + (int32_t) sizeof(uint64_t);
 }
 
 int32_t serializer_write_string(int conn, const char *str) {
@@ -145,7 +148,7 @@ int32_t serializer_write_string(int conn, const char *str) {
         return r;
     }
 
-    return r + sizeof(uint64_t);
+    return r + (int32_t) sizeof(uint64_t);
 }
 
 int32_t serializer_read_int(int conn, int *value) {

@@ -20,7 +20,7 @@ public class ZygoteLoaderPlugin implements Plugin<Project> {
     public static final String LOADER_FLAVOR_DIMENSION = "loader";
 
     @Override
-    public void apply(@Nonnull Project target) {
+    public void apply(@Nonnull final Project target) {
         if (!target.getPlugins().hasPlugin("com.android.application")) {
             throw new GradleException("com.android.application not applied");
         }

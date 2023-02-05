@@ -8,7 +8,6 @@ import com.github.kr328.gradle.zygote.tasks.PackagesTask;
 import com.github.kr328.gradle.zygote.tasks.PropertiesTask;
 import com.github.kr328.gradle.zygote.util.StringUtils;
 
-import org.apache.tools.ant.filters.FixCrLfFilter;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.file.FileCollection;
@@ -31,7 +30,7 @@ public final class ZygoteLoaderDecorator {
     private final Project project;
     private final ZygoteLoaderExtension extension;
 
-    public ZygoteLoaderDecorator(Project project, ZygoteLoaderExtension extension) {
+    public ZygoteLoaderDecorator(final Project project, final ZygoteLoaderExtension extension) {
         this.project = project;
         this.extension = extension;
     }
@@ -205,7 +204,7 @@ public final class ZygoteLoaderDecorator {
 
         final String flavorName;
 
-        Loader(String flavorName) {
+        Loader(final String flavorName) {
             this.flavorName = flavorName;
         }
 

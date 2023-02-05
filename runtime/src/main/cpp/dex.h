@@ -12,7 +12,7 @@ void dex_load_and_invoke(
         const char *package_name,
         const void *dex_block, uint32_t dex_length,
         const void *properties_block, uint32_t properties_length,
-        int set_trusted, int debuggable
+        int use_binder_interceptors
 );
 
 #ifdef __cplusplus

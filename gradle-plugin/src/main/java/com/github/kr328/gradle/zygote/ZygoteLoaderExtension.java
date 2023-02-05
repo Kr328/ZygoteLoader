@@ -49,7 +49,7 @@ public class ZygoteLoaderExtension {
 
     public static class Properties extends LinkedHashMap<String, String> {
         @Override
-        public String put(String key, String value) {
+        public String put(final String key, final String value) {
             if (value == null) {
                 remove(key);
             }
@@ -118,6 +118,14 @@ public class ZygoteLoaderExtension {
 
         public void setUpdateJson(@Nullable final String updateJson) {
             put("updateJson", updateJson);
+        }
+
+        public boolean isUseBinderInterceptors() {
+            return Boolean.parseBoolean(get("useBinderInterceptors"));
+        }
+
+        public void setUseBinderInterceptors(final boolean enabled) {
+            put("useBinderInterceptors", Boolean.toString(enabled));
         }
     }
 }
