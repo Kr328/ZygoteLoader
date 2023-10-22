@@ -4,7 +4,7 @@ plugins {
 
 subprojects {
     group = "com.github.kr328.gradle.zygote"
-    version = "3.0"
+    version = "3.1"
 
     plugins.withId("java") {
         extensions.configure<JavaPluginExtension> {

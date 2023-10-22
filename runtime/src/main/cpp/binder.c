@@ -5,6 +5,7 @@
 
 #include <malloc.h>
 #include <string.h>
+#include <stdarg.h>
 
 static jclass c_binder;
 static jmethodID m_exec_transact;
@@ -38,6 +39,19 @@ static jboolean replaced_call_boolean_method_v(
     return original_jni_env->CallBooleanMethodV(env, obj, method, args);
 }
 
+static jboolean JNICALL invoke_next_call_boolean_method(
+        JNIEnv *env,
+        jobject obj,
+        jmethodID method,
+        ...
+) {
+    va_list args;
+    va_start(args, method);
+    jboolean ret = original_jni_env->CallBooleanMethodV(env, obj, method, args);
+    va_end(args);
+    return ret;
+}
+
 static jboolean JNICALL jni_call_exec_transact(
         JNIEnv *env,
         jclass clazz,
@@ -57,7 +71,7 @@ static jboolean JNICALL jni_call_exec_transact(
         reply_ptr = original_jni_env->GetLongField(env, data, f_native_ptr);
     }
 
-    return original_jni_env->CallBooleanMethod(
+    return invoke_next_call_boolean_method(
             env,
             binder,
             m_exec_transact,
