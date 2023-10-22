@@ -20,8 +20,8 @@ dependencyResolutionManagement {
     }
     versionCatalogs {
         create("libs") {
-            val agp = "7.4.1"
-            val annotation = "1.5.0"
+            val agp = "8.1.2"
+            val annotation = "1.7.0"
             val riru = "26.0.0"
 
             library("android-gradle", "com.android.tools.build:gradle:$agp")
