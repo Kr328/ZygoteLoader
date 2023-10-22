@@ -43,9 +43,9 @@ public final class ZygoteLoaderDecorator {
 
         moduleProp.put("version", variantOutput.getVersionName().getOrElse(""));
         moduleProp.put("versionCode", variantOutput.getVersionCode().getOrElse(0).toString());
-        moduleProp.put("minSdkVersion", String.valueOf(variant.getMinSdkVersion().getApiLevel()));
-        if (variant.getMaxSdkVersion() != null) {
-            moduleProp.put("maxSdkVersion", String.valueOf(variant.getMaxSdkVersion()));
+        moduleProp.put("minSdkVersion", String.valueOf(variant.getMaxSdk()));
+        if (variant.getMaxSdk() != null) {
+            moduleProp.put("maxSdkVersion", String.valueOf(variant.getMaxSdk()));
         }
 
         if (loader == Loader.Riru) {
@@ -83,7 +83,7 @@ public final class ZygoteLoaderDecorator {
                 "mergeMagisk" + StringUtils.capitalize(variant.getName()),
                 Sync.class,
                 task -> {
-                    task.setDestinationDir(new File(project.getBuildDir(), "intermediates/merged_magisk/" + variant.getName()));
+                    task.into(project.getLayout().getBuildDirectory().dir("intermediates/merged_magisk/" + variant.getName()));
 
                     final Provider<File> apkFile = pack.map(p ->
                             p.getOutputs().getFiles().getFiles().stream()

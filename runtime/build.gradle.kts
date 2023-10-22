@@ -55,6 +55,7 @@ android {
     }
 
     buildFeatures {
+        buildConfig = true
         prefab = true
     }
 
